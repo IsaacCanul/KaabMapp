@@ -17,10 +17,22 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { styles } from "./RegisterScreen.styles";
 
+import {
+  validarEmail,
+  validarPassword,
+  validarNombre,
+  validarTel,
+  validarConfirmPass,
+  validarTelefono,
+  validarApellido,
+}from "../../utils/validators"
+import HomeScreen from "../HomeScreens";
+
 export default function RegisterScreen({
   navigation,
 }) {
   const [nombre, setNombre] = useState("");
+  const [apellido, setApellido] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
 
@@ -45,6 +57,14 @@ export default function RegisterScreen({
     navigation.goBack();
   };
 
+  const irALogin = () => {
+    navigation.navigate("Login");
+  };
+
+  const irAlHome = () => {
+    navigation.navigate("Home");
+  };
+
   const togglePassword = () => {
     setShowPassword(!showPassword);
   };
@@ -62,18 +82,65 @@ export default function RegisterScreen({
   };
 
   const handleRegister = () => {
-    console.log("Nombre:", nombre);
-    console.log("Email:", email);
-    console.log("Teléfono:", telefono);
-    console.log("Password:", password);
-    console.log(
-      "Confirmación:",
-      confirmPassword
-    );
-    console.log(
-      "Aceptó términos:",
-      aceptaTerminos
-    );
+    setError ("");
+
+    const errorNombre = validarNombre(nombre);
+
+    if (errorNombre !== ""){
+      setError(errorNombre);
+      return;
+    }
+
+    const errorApeliido = validarApellido(apellido);
+
+    if (errorApeliido !== ""){
+      setError(errorApeliido);
+      return;
+    }
+    
+    const errorEmail = validarEmail(email);
+
+    if (errorEmail !== ""){
+      setError(errorEmail);
+      return;
+    }
+    const errorTel = validarTelefono(telefono);
+
+    if (errorTel !== ""){
+      setError(errorTel);
+      return;
+    }
+
+    const errorPassword = validarPassword(password);
+
+    if (errorPassword !== ""){
+      setError(errorPassword);
+      return;
+    }
+
+    const errorConfirmPass = validarConfirmPass(password, confirmPassword);
+
+    if (errorConfirmPass !== ""){
+      setError(errorConfirmPass);
+      return;
+    }
+
+    if (!aceptaTerminos){
+      setError("Debes aceptar los terminos y condiciones")
+      return;
+    }
+
+    console.log("Formulario valido");
+
+    const nuevoUsuario = {
+    nombre: nombre.trim(),
+    email: email.trim().toLowerCase(),
+    telefono: telefono.trim(),
+    password,
+    };
+
+    console.log("Usuario preparado:", nuevoUsuario);
+   
   };
 
   return (
@@ -136,7 +203,7 @@ export default function RegisterScreen({
             />
 
             <Text style={styles.brand}>
-              KaabMap
+              MeliponApp
             </Text>
 
             <Text
@@ -169,7 +236,7 @@ export default function RegisterScreen({
               {/* NOMBRE */}
 
               <Text style={styles.label}>
-                Nombre completo
+                Nombre(s)
               </Text>
 
               <View
@@ -185,7 +252,7 @@ export default function RegisterScreen({
 
                 <TextInput
                   style={styles.input}
-                  placeholder="Tu nombre completo"
+                  placeholder="Tu nombre"
                   placeholderTextColor="#A0A0A0"
                   value={nombre}
                   onChangeText={
@@ -193,6 +260,34 @@ export default function RegisterScreen({
                   }
                 />
               </View>
+              {/* APELLIDO */}
+
+              <Text style={styles.label}>
+                Apellido
+              </Text>
+
+              <View
+                style={
+                  styles.inputContainer
+                }
+              >
+                <Ionicons
+                  name="person-outline"
+                  size={22}
+                  color="#8A8A8A"
+                />
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Tu apellido"
+                  placeholderTextColor="#A0A0A0"
+                  value={apellido}
+                  onChangeText={
+                    setApellido
+                  }
+                />
+              </View>
+
 
               {/* EMAIL */}
 
@@ -419,7 +514,7 @@ export default function RegisterScreen({
                 }
                 activeOpacity={0.85}
                 onPress={
-                  handleRegister
+                  irAlHome
                 }
               >
                 <Text
@@ -453,7 +548,7 @@ export default function RegisterScreen({
                 </Text>
 
                 <TouchableOpacity
-                  onPress={volver}
+                  onPress={irALogin}
                 >
                   <Text
                     style={
