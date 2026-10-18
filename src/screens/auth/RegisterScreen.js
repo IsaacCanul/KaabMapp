@@ -1,480 +1,91 @@
 import React, { useState } from "react";
-
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-  StatusBar,
-} from "react-native";
-
+import { ActivityIndicator, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import AppLogo from "../../components/AppLogo";
+import { useAuth } from "../../context/AuthContext";
+import { closeAuthFlow } from "../../navigation/navigationRef";
+import { validateEmail, validatePassword } from "../../utils/validators";
+import { COLORS } from "../../theme/colors";
+import { authStyles as styles } from "./auth.styles";
 
-import { styles } from "./RegisterScreen.styles";
+const USER_TYPES = [
+  { value: "productor", label: "Productor / meliponicultor" },
+  { value: "visitante", label: "Comprador / visitante" },
+];
 
-export default function RegisterScreen({
-  navigation,
-}) {
-  const [nombre, setNombre] = useState("");
-  const [email, setEmail] = useState("");
-  const [telefono, setTelefono] = useState("");
-
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] =
-    useState("");
-
-  const [aceptaTerminos, setAceptaTerminos] =
-    useState(false);
-
-  const [showPassword, setShowPassword] =
-    useState(false);
-
-  const [
-    showConfirmPassword,
-    setShowConfirmPassword,
-  ] = useState(false);
-
+export default function RegisterScreen({ navigation }) {
+  const { register } = useAuth();
+  const [form, setForm] = useState({ nombre: "", apellidos: "", email: "", telefono: "", institucionEmpresa: "", tipoUsuario: "productor", password: "", confirmPassword: "" });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
-  const volver = () => {
-    navigation.goBack();
+  const validate = () => {
+    if (!form.nombre.trim()) return "Escribe tu nombre.";
+    if (!form.apellidos.trim()) return "Escribe tus apellidos.";
+    const emailError = validateEmail(form.email);
+    if (emailError) return emailError;
+    if (!form.telefono.trim()) return "Escribe un número telefónico.";
+    const passwordError = validatePassword(form.password, { min: 8 });
+    if (passwordError) return passwordError;
+    if (form.password !== form.confirmPassword) return "Las contraseñas no coinciden.";
+    return "";
   };
 
-  const togglePassword = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const toggleConfirmPassword = () => {
-    setShowConfirmPassword(
-      !showConfirmPassword
-    );
-  };
-
-  const toggleTerminos = () => {
-    setAceptaTerminos(
-      !aceptaTerminos
-    );
-  };
-
-  const handleRegister = () => {
-    console.log("Nombre:", nombre);
-    console.log("Email:", email);
-    console.log("Teléfono:", telefono);
-    console.log("Password:", password);
-    console.log(
-      "Confirmación:",
-      confirmPassword
-    );
-    console.log(
-      "Aceptó términos:",
-      aceptaTerminos
-    );
+  const handleRegister = async () => {
+    setError("");
+    const validationError = validate();
+    if (validationError) return setError(validationError);
+    try {
+      setLoading(true);
+      const result = await register(form);
+      if (result?.requiresVerification || !result?.accessToken) {
+        navigation.navigate("Verification", { email: form.email.trim().toLowerCase(), phone: form.telefono.trim() });
+        return;
+      }
+      closeAuthFlow();
+    } catch (err) {
+      setError(err?.message || "No fue posible crear la cuenta.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <SafeAreaView
-      style={styles.container}
-    >
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#FAF8F1"
-      />
+    <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}><Ionicons name="chevron-back" size={23} color={COLORS.primaryDark} /></TouchableOpacity>
+        <View style={styles.logoWrap}><AppLogo compact /></View>
 
-      <Image
-        source={require("../../../assets/leaves-top.png")}
-        style={styles.leavesTop}
-        resizeMode="stretch"
-        pointerEvents="none"
-      />
+        <Text style={styles.title}>Crear cuenta</Text>
+        <Text style={styles.subtitle}>Únete a KaabMap para registrar meliponarios y administrar la información de tu perfil.</Text>
 
-      <KeyboardAvoidingView
-        style={styles.keyboard}
-        behavior={
-          Platform.OS === "ios"
-            ? "padding"
-            : undefined
-        }
-      >
-        <ScrollView
-          contentContainerStyle={
-            styles.scrollContent
-          }
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View
-            style={
-              styles.screenContent
-            }
-          >
-            {/* VOLVER */}
+        <View style={styles.row}>
+          <View style={{ flex: 1 }}><Text style={styles.label}>Nombre(s)</Text><TextInput style={styles.input} value={form.nombre} onChangeText={(v) => setField("nombre", v)} placeholder="Nombre" placeholderTextColor={COLORS.gray} /></View>
+          <View style={{ flex: 1 }}><Text style={styles.label}>Apellidos</Text><TextInput style={styles.input} value={form.apellidos} onChangeText={(v) => setField("apellidos", v)} placeholder="Apellidos" placeholderTextColor={COLORS.gray} /></View>
+        </View>
 
-            <TouchableOpacity
-              style={
-                styles.backButton
-              }
-              onPress={volver}
-            >
-              <Ionicons
-                name="chevron-back"
-                size={27}
-                color="#06492E"
-              />
-            </TouchableOpacity>
+        <Text style={styles.label}>Correo electrónico</Text>
+        <TextInput style={styles.input} value={form.email} onChangeText={(v) => setField("email", v)} autoCapitalize="none" keyboardType="email-address" placeholder="nombre@correo.com" placeholderTextColor={COLORS.gray} />
+        <Text style={styles.label}>Teléfono</Text>
+        <TextInput style={styles.input} value={form.telefono} onChangeText={(v) => setField("telefono", v)} keyboardType="phone-pad" placeholder="985 000 0000" placeholderTextColor={COLORS.gray} />
 
-            {/* LOGO */}
+      
 
-            <Image
-              source={require("../../../assets/logo.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+        <Text style={styles.label}>Contraseña</Text>
+        <View style={styles.passwordRow}>
+          <TextInput style={styles.passwordInput} value={form.password} onChangeText={(v) => setField("password", v)} secureTextEntry={!showPassword} placeholder="Mínimo 8 caracteres" placeholderTextColor={COLORS.gray} />
+          <TouchableOpacity style={styles.eye} onPress={() => setShowPassword((value) => !value)}><Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={21} color={COLORS.gray} /></TouchableOpacity>
+        </View>
+        <Text style={styles.label}>Confirmar contraseña</Text>
+        <TextInput style={styles.input} value={form.confirmPassword} onChangeText={(v) => setField("confirmPassword", v)} secureTextEntry={!showPassword} placeholder="Repite tu contraseña" placeholderTextColor={COLORS.gray} />
 
-            <Text style={styles.brand}>
-              KaabMap
-            </Text>
-
-            <Text
-              style={styles.tagline}
-            >
-              Abejas nativas,
-              territorios vivos
-            </Text>
-
-            {/* FORMULARIO */}
-
-            <View
-              style={styles.card}
-            >
-              <Text
-                style={styles.title}
-              >
-                Crear cuenta
-              </Text>
-
-              <Text
-                style={
-                  styles.subtitle
-                }
-              >
-                Regístrate para comenzar
-                a utilizar KaabMap
-              </Text>
-
-              {/* NOMBRE */}
-
-              <Text style={styles.label}>
-                Nombre completo
-              </Text>
-
-              <View
-                style={
-                  styles.inputContainer
-                }
-              >
-                <Ionicons
-                  name="person-outline"
-                  size={22}
-                  color="#8A8A8A"
-                />
-
-                <TextInput
-                  style={styles.input}
-                  placeholder="Tu nombre completo"
-                  placeholderTextColor="#A0A0A0"
-                  value={nombre}
-                  onChangeText={
-                    setNombre
-                  }
-                />
-              </View>
-
-              {/* EMAIL */}
-
-              <Text style={styles.label}>
-                Correo electrónico
-              </Text>
-
-              <View
-                style={
-                  styles.inputContainer
-                }
-              >
-                <Ionicons
-                  name="mail-outline"
-                  size={22}
-                  color="#8A8A8A"
-                />
-
-                <TextInput
-                  style={styles.input}
-                  placeholder="correo@ejemplo.com"
-                  placeholderTextColor="#A0A0A0"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  value={email}
-                  onChangeText={
-                    setEmail
-                  }
-                />
-              </View>
-
-              {/* TELÉFONO */}
-
-              <Text style={styles.label}>
-                Teléfono
-              </Text>
-
-              <View
-                style={
-                  styles.inputContainer
-                }
-              >
-                <Ionicons
-                  name="call-outline"
-                  size={22}
-                  color="#8A8A8A"
-                />
-
-                <TextInput
-                  style={styles.input}
-                  placeholder="9991234567"
-                  placeholderTextColor="#A0A0A0"
-                  keyboardType="phone-pad"
-                  value={telefono}
-                  onChangeText={
-                    setTelefono
-                  }
-                />
-              </View>
-
-              {/* CONTRASEÑA */}
-
-              <Text style={styles.label}>
-                Contraseña
-              </Text>
-
-              <View
-                style={
-                  styles.inputContainer
-                }
-              >
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={22}
-                  color="#8A8A8A"
-                />
-
-                <TextInput
-                  style={styles.input}
-                  placeholder="Contraseña"
-                  placeholderTextColor="#A0A0A0"
-                  secureTextEntry={
-                    !showPassword
-                  }
-                  value={password}
-                  onChangeText={
-                    setPassword
-                  }
-                />
-
-                <TouchableOpacity
-                  onPress={
-                    togglePassword
-                  }
-                >
-                  <Ionicons
-                    name={
-                      showPassword
-                        ? "eye-outline"
-                        : "eye-off-outline"
-                    }
-                    size={23}
-                    color="#8A8A8A"
-                  />
-                </TouchableOpacity>
-              </View>
-
-              {/* CONFIRMAR CONTRASEÑA */}
-
-              <Text style={styles.label}>
-                Confirmar contraseña
-              </Text>
-
-              <View
-                style={
-                  styles.inputContainer
-                }
-              >
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={22}
-                  color="#8A8A8A"
-                />
-
-                <TextInput
-                  style={styles.input}
-                  placeholder="Repite tu contraseña"
-                  placeholderTextColor="#A0A0A0"
-                  secureTextEntry={
-                    !showConfirmPassword
-                  }
-                  value={
-                    confirmPassword
-                  }
-                  onChangeText={
-                    setConfirmPassword
-                  }
-                />
-
-                <TouchableOpacity
-                  onPress={
-                    toggleConfirmPassword
-                  }
-                >
-                  <Ionicons
-                    name={
-                      showConfirmPassword
-                        ? "eye-outline"
-                        : "eye-off-outline"
-                    }
-                    size={23}
-                    color="#8A8A8A"
-                  />
-                </TouchableOpacity>
-              </View>
-
-              {/* ERROR */}
-
-              {error !== "" && (
-                <View
-                  style={
-                    styles.errorContainer
-                  }
-                >
-                  <Ionicons
-                    name="alert-circle-outline"
-                    size={18}
-                    color="#B42318"
-                  />
-
-                  <Text
-                    style={
-                      styles.errorText
-                    }
-                  >
-                    {error}
-                  </Text>
-                </View>
-              )}
-
-              {/* TÉRMINOS */}
-
-              <TouchableOpacity
-                style={
-                  styles.termsContainer
-                }
-                onPress={
-                  toggleTerminos
-                }
-              >
-                <View
-                  style={[
-                    styles.checkbox,
-
-                    aceptaTerminos &&
-                      styles.checkboxActive,
-                  ]}
-                >
-                  {aceptaTerminos && (
-                    <Ionicons
-                      name="checkmark"
-                      size={16}
-                      color="#FFFFFF"
-                    />
-                  )}
-                </View>
-
-                <Text
-                  style={
-                    styles.termsText
-                  }
-                >
-                  Acepto los términos y
-                  condiciones
-                </Text>
-              </TouchableOpacity>
-
-              {/* CREAR CUENTA */}
-
-              <TouchableOpacity
-                style={
-                  styles.registerButton
-                }
-                activeOpacity={0.85}
-                onPress={
-                  handleRegister
-                }
-              >
-                <Text
-                  style={
-                    styles.registerButtonText
-                  }
-                >
-                  Crear cuenta
-                </Text>
-
-                <Ionicons
-                  name="chevron-forward"
-                  size={23}
-                  color="#FFFFFF"
-                />
-              </TouchableOpacity>
-
-              {/* LOGIN */}
-
-              <View
-                style={
-                  styles.loginContainer
-                }
-              >
-                <Text
-                  style={
-                    styles.loginNormal
-                  }
-                >
-                  ¿Ya tienes cuenta?
-                </Text>
-
-                <TouchableOpacity
-                  onPress={volver}
-                >
-                  <Text
-                    style={
-                      styles.loginLink
-                    }
-                  >
-                    Inicia sesión
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-
-      <Image
-        source={require("../../../assets/leaves-bottom.png")}
-        style={styles.leavesBottom}
-        resizeMode="stretch"
-        pointerEvents="none"
-      />
+        {error ? <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View> : null}
+        <TouchableOpacity style={[styles.primary, loading && styles.primaryDisabled]} disabled={loading} onPress={handleRegister}>{loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryText}>Crear cuenta</Text>}</TouchableOpacity>
+        <Text style={styles.bottomText}>El personal de campo debe ser creado o asignado desde el sistema administrativo.</Text>
+      </ScrollView>
     </SafeAreaView>
   );
 }
