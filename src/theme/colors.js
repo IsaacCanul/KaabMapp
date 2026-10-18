@@ -1,18 +1,22 @@
 export const COLORS = {
-  green: "#06492E",
-  greenDark: "#043A25",
-  greenSoft: "#E7F0E5",
-
-  gold: "#E9AD29",
-
-  cream: "#FAF8F1",
+  primary: "#0B5A3C",
+  primaryDark: "#073E2B",
+  primarySoft: "#EAF4E9",
+  primarySoft2: "#F1F7EF",
+  honey: "#E4A916",
+  honeySoft: "#FFF5D9",
+  cream: "#FBF9F1",
   white: "#FFFFFF",
-
-  text: "#252525",
-  gray: "#60646B",
-
-  border: "#E5E1D9",
-
+  text: "#14251E",
+  gray: "#6E756F",
+  gray2: "#989D99",
+  grayLight: "#F4F4EF",
+  border: "#E6E3D9",
+  success: "#E7F3E2",
+  successText: "#2D7042",
+  warning: "#FFF2D8",
+  warningText: "#9A6410",
   error: "#B42318",
-  errorBackground: "#FEF3F2",
+  errorSoft: "#FEF3F2",
+  black: "#111111"
 };
