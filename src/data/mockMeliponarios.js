@@ -1,0 +1,1 @@
+export { mockMeliponarios } from "./mockData";
