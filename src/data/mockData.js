@@ -1,49 +1,167 @@
-// Datos de respaldo para desarrollar sin API.
-// Los campos coinciden con el modelo mostrado por el panel web del proyecto.
+// Datos temporales para desarrollo sin API.
+// Estos campos deben mantener la misma forma que después entregará el backend.
+
 export const mockMeliponarios = [
   {
     id: 1,
+
     nombre: "Meliponario Valladolid",
     municipio: "Valladolid",
     localidad: "Valladolid",
-    descripcion: "Meliponario de demostración dedicado a la conservación de abejas nativas sin aguijón.",
-    referenciaUbicacion: "Zona urbana de Valladolid, Yucatán",
+
+    descripcion:
+      "Meliponario dedicado a la conservación y difusión de las abejas nativas sin aguijón de Yucatán.",
+
+    referenciaUbicacion:
+      "Zona urbana de Valladolid, Yucatán",
+
     latitude: 20.6896,
     longitude: -88.2018,
-    tipoOferta: "visitas",
+
     estado: "Activo",
-    especies: ["Melipona beecheii"],
+    tipoOferta: "visitas",
+
+    responsable: {
+      nombre: "Responsable del meliponario",
+      descripcion: "Meliponicultor de Valladolid",
+    },
+
+    especies: [
+      {
+        nombre: "Melipona beecheii",
+        nombreMaya: "Xunáan kaab",
+        cajasTecnificadas: 8,
+        jobones: 4,
+      },
+    ],
+
     productosDisponibles: [],
+
+    puntoVenta: null,
   },
+
   {
     id: 2,
+
     nombre: "Meliponario Mérida",
     municipio: "Mérida",
     localidad: "Mérida",
-    descripcion: "Registro de demostración con disponibilidad de miel de melipona.",
-    referenciaUbicacion: "Referencia pendiente de validar",
+
+    descripcion:
+      "Meliponario de demostración dedicado al manejo de abejas nativas y a la producción responsable de miel de melipona.",
+
+    referenciaUbicacion:
+      "Referencia pendiente de validar",
+
     latitude: 20.9671,
     longitude: -89.6237,
-    tipoOferta: "miel",
+
     estado: "Activo",
-    especies: ["Melipona beecheii", "Scaptotrigona pectoralis"],
-    productosDisponibles: ["Miel de melipona"],
+    tipoOferta: "miel",
+
+    responsable: {
+      nombre: "Responsable del meliponario",
+      descripcion: "Meliponicultor de Mérida",
+    },
+
+    especies: [
+      {
+        nombre: "Melipona beecheii",
+        nombreMaya: "Xunáan kaab",
+        cajasTecnificadas: 12,
+        jobones: 5,
+      },
+      {
+        nombre: "Scaptotrigona pectoralis",
+        nombreMaya: null,
+        cajasTecnificadas: 6,
+        jobones: 2,
+      },
+    ],
+
+    productosDisponibles: [
+      {
+        id: 1,
+        nombre: "Miel de melipona",
+        presentacion: "Frasco",
+      },
+    ],
+
+    puntoVenta: {
+      nombre: "Punto de venta Mérida",
+      direccion: "Mérida, Yucatán",
+      latitude: 20.9671,
+      longitude: -89.6237,
+    },
   },
+
   {
     id: 3,
+
     nombre: "Meliponario Izamal",
     municipio: "Izamal",
     localidad: "Centro",
-    descripcion: "Meliponario con venta de miel y actividades de difusión.",
-    referenciaUbicacion: "Centro de Izamal, Yucatán",
+
+    descripcion:
+      "Meliponario dedicado a la conservación de las abejas nativas sin aguijón, la difusión de la meliponicultura y la elaboración responsable de productos de la colmena.",
+
+    referenciaUbicacion:
+      "Centro de Izamal, Yucatán",
+
     latitude: 20.9314,
     longitude: -89.0189,
-    tipoOferta: "ambos",
+
     estado: "Activo",
-    especies: ["Melipona beecheii", "Nannotrigona perilampoides"],
-    productosDisponibles: ["Miel de melipona", "Propóleo"],
+    tipoOferta: "ambos",
+
+    responsable: {
+      nombre: "Responsable del meliponario",
+      descripcion: "Meliponicultor de Izamal",
+    },
+
+    especies: [
+      {
+        nombre: "Melipona beecheii",
+        nombreMaya: "Xunáan kaab",
+        cajasTecnificadas: 24,
+        jobones: 12,
+      },
+      {
+        nombre: "Nannotrigona perilampoides",
+        nombreMaya: null,
+        cajasTecnificadas: 8,
+        jobones: 4,
+      },
+    ],
+
+    productosDisponibles: [
+      {
+        id: 1,
+        nombre: "Miel de melipona",
+        presentacion: "Frasco",
+      },
+      {
+        id: 2,
+        nombre: "Propóleo",
+        presentacion: "Presentación informativa",
+      },
+      {
+        id: 3,
+        nombre: "Cera de la colmena",
+        presentacion: "Presentación informativa",
+      },
+    ],
+
+    // Ubicación comercial distinta del meliponario.
+    puntoVenta: {
+      nombre: "Meliponario Izamal",
+      direccion:
+        "Centro de Izamal, Yucatán",
+      latitude: 20.9314,
+      longitude: -89.0189,
+    },
   },
 ];
 
-// Alias para pantallas antiguas que todavía importan MELIPONARIOS.
-export const MELIPONARIOS = mockMeliponarios;
+export const MELIPONARIOS =
+  mockMeliponarios;

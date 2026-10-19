@@ -7,35 +7,33 @@ import {
   View,
 } from "react-native";
 
-import {
-  Ionicons,
-} from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 
-import {
-  COLORS,
-} from "../theme/colors";
+import { COLORS } from "../theme/colors";
 
-import StatusBadge
-  from "./StatusBadge";
+import StatusBadge from "./StatusBadge";
 
 export default function MeliponarioCard({
   item,
   onPress,
 }) {
-  const especies =
-    Array.isArray(item?.especies)
-      ? item.especies
-      : [];
+  const especies = Array.isArray(item?.especies)
+    ? item.especies
+    : [];
 
-  const productos =
-    Array.isArray(
-      item?.productosDisponibles
-    )
-      ? item.productosDisponibles
-      : [];
+  const productos = Array.isArray(
+    item?.productosDisponibles
+  )
+    ? item.productosDisponibles
+    : [];
 
-  const tieneProductos =
-    productos.length > 0;
+  const obtenerNombreEspecie = (especie) => {
+    if (typeof especie === "string") {
+      return especie;
+    }
+
+    return especie?.nombre ?? "Especie";
+  };
 
   return (
     <TouchableOpacity
@@ -43,23 +41,14 @@ export default function MeliponarioCard({
       style={styles.card}
       onPress={onPress}
     >
-      {/* Placeholder mientras aún no tenemos fotos reales */}
-      <View
-        style={
-          styles.imagePlaceholder
-        }
-      >
+      <View style={styles.imagePlaceholder}>
         <Ionicons
           name="leaf-outline"
           size={46}
           color={COLORS.primary}
         />
 
-        <Text
-          style={
-            styles.placeholderText
-          }
-        >
+        <Text style={styles.placeholderText}>
           KaabMap
         </Text>
       </View>
@@ -70,15 +59,11 @@ export default function MeliponarioCard({
             numberOfLines={2}
             style={styles.title}
           >
-            {item?.nombre ??
-              "Meliponario"}
+            {item?.nombre ?? "Meliponario"}
           </Text>
 
           <StatusBadge
-            status={
-              item?.estado ??
-              "Activo"
-            }
+            status={item?.estado ?? "Activo"}
           />
         </View>
 
@@ -93,6 +78,7 @@ export default function MeliponarioCard({
             {item?.localidad ??
               item?.municipio ??
               "Yucatán"}
+
             {item?.distancia != null
               ? ` · ${item.distancia} km`
               : ""}
@@ -102,39 +88,32 @@ export default function MeliponarioCard({
         <View style={styles.tags}>
           {especies
             .slice(0, 2)
-            .map((especie) => (
-              <View
-                key={especie}
-                style={styles.tag}
-              >
-                <Text
-                  style={
-                    styles.tagText
-                  }
+            .map((especie, index) => {
+              const nombre =
+                obtenerNombreEspecie(especie);
+
+              return (
+                <View
+                  key={`${nombre}-${index}`}
+                  style={styles.tag}
                 >
-                  {especie}
-                </Text>
-              </View>
-            ))}
+                  <Text style={styles.tagText}>
+                    {nombre}
+                  </Text>
+                </View>
+              );
+            })}
         </View>
 
-        {tieneProductos && (
-          <View
-            style={
-              styles.productsRow
-            }
-          >
+        {productos.length > 0 && (
+          <View style={styles.productsRow}>
             <Ionicons
               name="cube-outline"
               size={15}
               color={COLORS.primary}
             />
 
-            <Text
-              style={
-                styles.productsText
-              }
-            >
+            <Text style={styles.productsText}>
               Productos disponibles
             </Text>
           </View>
@@ -144,116 +123,111 @@ export default function MeliponarioCard({
   );
 }
 
-const styles =
-  StyleSheet.create({
-    card: {
-      backgroundColor:
-        COLORS.white,
-      borderRadius: 22,
-      borderWidth: 1,
-      borderColor:
-        COLORS.border,
-      overflow: "hidden",
-      marginBottom: 16,
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: COLORS.white,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: "hidden",
+    marginBottom: 16,
 
-      shadowColor: "#000",
-      shadowOpacity: 0.06,
-      shadowRadius: 12,
-      shadowOffset: {
-        width: 0,
-        height: 5,
-      },
-
-      elevation: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: {
+      width: 0,
+      height: 5,
     },
 
-    imagePlaceholder: {
-      width: "100%",
-      height: 170,
-      backgroundColor:
-        COLORS.cream,
-      alignItems: "center",
-      justifyContent: "center",
-    },
+    elevation: 3,
+  },
 
-    placeholderText: {
-      marginTop: 8,
-      color:
-        COLORS.primaryDark ??
-        COLORS.primary,
-      fontWeight: "900",
-      fontSize: 15,
-    },
+  imagePlaceholder: {
+    width: "100%",
+    height: 170,
+    backgroundColor:
+      COLORS.cream ?? "#FAF8F1",
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
-    content: {
-      padding: 14,
-    },
+  placeholderText: {
+    marginTop: 8,
+    color:
+      COLORS.primaryDark ??
+      COLORS.primary,
+    fontWeight: "900",
+    fontSize: 15,
+  },
 
-    titleRow: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      justifyContent:
-        "space-between",
-    },
+  content: {
+    padding: 14,
+  },
 
-    title: {
-      flex: 1,
-      marginRight: 10,
-      color:
-        COLORS.primaryDark ??
-        COLORS.primary,
-      fontSize: 16,
-      fontWeight: "900",
-    },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
 
-    metaRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginTop: 5,
-    },
+  title: {
+    flex: 1,
+    marginRight: 10,
+    color:
+      COLORS.primaryDark ??
+      COLORS.primary,
+    fontSize: 16,
+    fontWeight: "900",
+  },
 
-    meta: {
-      marginLeft: 3,
-      color: COLORS.gray,
-      fontSize: 12,
-    },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5,
+  },
 
-    tags: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      marginTop: 10,
-    },
+  meta: {
+    marginLeft: 3,
+    color: COLORS.gray,
+    fontSize: 12,
+  },
 
-    tag: {
-      backgroundColor:
-        COLORS.grayLight ??
-        COLORS.cream,
-      borderRadius: 12,
-      paddingHorizontal: 8,
-      paddingVertical: 5,
-      marginRight: 6,
-      marginBottom: 5,
-    },
+  tags: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 10,
+  },
 
-    tagText: {
-      color: COLORS.gray,
-      fontSize: 10,
-    },
+  tag: {
+    backgroundColor:
+      COLORS.grayLight ??
+      "#EDF4EA",
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    marginRight: 6,
+    marginBottom: 5,
+  },
 
-    productsRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      borderTopWidth: 1,
-      borderTopColor:
-        COLORS.border,
-      marginTop: 6,
-      paddingTop: 10,
-    },
+  tagText: {
+    color: COLORS.gray,
+    fontSize: 10,
+  },
 
-    productsText: {
-      marginLeft: 7,
-      color: COLORS.primary,
-      fontSize: 12,
-      fontWeight: "800",
-    },
-  });
+  productsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    marginTop: 6,
+    paddingTop: 10,
+  },
+
+  productsText: {
+    marginLeft: 7,
+    color: COLORS.primary,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+});

@@ -16,12 +16,6 @@ import {
   Ionicons,
 } from "@expo/vector-icons";
 
-import PrimaryButton
-  from "../../components/PrimaryButton";
-
-import StatusBadge
-  from "../../components/StatusBadge";
-
 import {
   MELIPONARIOS,
 } from "../../data/mockData";
@@ -30,72 +24,52 @@ import {
   COLORS,
 } from "../../theme/colors";
 
+import StatusBadge
+  from "../../components/StatusBadge";
+
 export default function MeliponarioDetailScreen({
   navigation,
   route,
 }) {
-  /*
-   * Permitimos las dos formas:
-   *
-   * navigate("MeliponarioDetail", {
-   *   id: 1
-   * })
-   *
-   * o:
-   *
-   * navigate("MeliponarioDetail", {
-   *   meliponario: item
-   * })
-   */
   const meliponario =
-    route?.params
-      ?.meliponario ??
+    route?.params?.meliponario ??
     MELIPONARIOS.find(
       (item) =>
         String(item.id) ===
-        String(
-          route?.params?.id
-        )
+        String(route?.params?.id)
     );
 
   if (!meliponario) {
     return (
       <SafeAreaView
-        style={
-          styles.notFound
-        }
+        style={styles.notFound}
       >
         <Ionicons
           name="alert-circle-outline"
-          size={48}
+          size={50}
           color={COLORS.gray}
         />
 
         <Text
-          style={
-            styles.notFoundTitle
-          }
+          style={styles.notFoundTitle}
         >
-          Meliponario no
-          encontrado
+          Meliponario no encontrado
         </Text>
 
-        <Text
-          style={
-            styles.notFoundText
-          }
-        >
-          No se encontró el
-          meliponario
-          seleccionado.
-        </Text>
-
-        <PrimaryButton
-          title="Regresar"
+        <TouchableOpacity
+          style={styles.backAction}
           onPress={() =>
             navigation.goBack()
           }
-        />
+        >
+          <Text
+            style={
+              styles.backActionText
+            }
+          >
+            Regresar
+          </Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -109,12 +83,13 @@ export default function MeliponarioDetailScreen({
 
   const productos =
     Array.isArray(
-      meliponario
-        .productosDisponibles
+      meliponario.productosDisponibles
     )
-      ? meliponario
-          .productosDisponibles
+      ? meliponario.productosDisponibles
       : [];
+
+  const puntoVenta =
+    meliponario.puntoVenta;
 
   return (
     <SafeAreaView
@@ -130,14 +105,30 @@ export default function MeliponarioDetailScreen({
           false
         }
         contentContainerStyle={
-          styles.scroll
+          styles.scrollContent
         }
       >
-        {/* Hero */}
+        {/* =================================================
+            GALERÍA / HERO
+        ================================================= */}
         <View style={styles.hero}>
+          <View
+            style={styles.heroPlaceholder}
+          >
+            <Ionicons
+              name="leaf-outline"
+              size={64}
+              color={COLORS.primary}
+            />
+
+            <Text style={styles.heroText}>
+              KaabMap
+            </Text>
+          </View>
+
           <TouchableOpacity
             style={[
-              styles.circleButton,
+              styles.heroButton,
               styles.backButton,
             ]}
             onPress={() =>
@@ -146,23 +137,7 @@ export default function MeliponarioDetailScreen({
           >
             <Ionicons
               name="chevron-back"
-              size={23}
-              color={
-                COLORS.primaryDark ??
-                COLORS.primary
-              }
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.circleButton,
-              styles.shareButton,
-            ]}
-          >
-            <Ionicons
-              name="share-outline"
-              size={22}
+              size={25}
               color={
                 COLORS.primaryDark ??
                 COLORS.primary
@@ -172,47 +147,48 @@ export default function MeliponarioDetailScreen({
 
           <View
             style={
-              styles.heroContent
+              styles.heroRightActions
             }
           >
-            <Ionicons
-              name="leaf-outline"
-              size={58}
-              color={
-                COLORS.primary
-              }
-            />
+          
 
-            <Text
-              style={
-                styles.heroText
-              }
-            >
-              KaabMap
-            </Text>
+        
           </View>
-        </View>
 
-        <View style={styles.body}>
-          {/* Nombre */}
+          {/* Indicadores provisionales de galería */}
           <View
             style={
-              styles.titleRow
+              styles.galleryIndicators
             }
           >
             <View
-              style={{
-                flex: 1,
-              }}
-            >
-              <Text
-                style={
-                  styles.title
-                }
-              >
-                {
-                  meliponario.nombre
-                }
+              style={[
+                styles.galleryDot,
+                styles.galleryDotActive,
+              ]}
+            />
+
+            <View
+              style={styles.galleryDot}
+            />
+
+            <View
+              style={styles.galleryDot}
+            />
+          </View>
+        </View>
+
+        {/* =================================================
+            CONTENIDO
+        ================================================= */}
+        <View style={styles.body}>
+          {/* Nombre + ubicación */}
+          <View
+            style={styles.titleRow}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>
+                {meliponario.nombre}
               </Text>
 
               <View
@@ -222,10 +198,8 @@ export default function MeliponarioDetailScreen({
               >
                 <Ionicons
                   name="location-outline"
-                  size={15}
-                  color={
-                    COLORS.gray
-                  }
+                  size={17}
+                  color={COLORS.gray}
                 />
 
                 <Text
@@ -237,175 +211,396 @@ export default function MeliponarioDetailScreen({
                     meliponario.localidad,
                     meliponario.municipio,
                   ]
-                    .filter(
-                      Boolean
-                    )
+                    .filter(Boolean)
                     .join(", ")}
+                  , Yucatán
                 </Text>
               </View>
             </View>
-
-            <StatusBadge
-              status={
-                meliponario.estado
-              }
-            />
           </View>
 
-          {/* Descripción */}
-          <View style={styles.card}>
-            <Text
+          {/* Estado + especies */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={
+              false
+            }
+            contentContainerStyle={
+              styles.chipsRow
+            }
+          >
+            <StatusBadge
+              status={meliponario.estado}
+            />
+
+            {especies
+              .slice(0, 1)
+              .map((especie) => (
+                <View
+                  key={especie.nombre}
+                  style={styles.speciesChip}
+                >
+                  <Ionicons
+                    name="leaf-outline"
+                    size={15}
+                    color={COLORS.primary}
+                  />
+
+                  <Text
+                    style={
+                      styles.speciesChipText
+                    }
+                  >
+                    {especie.nombre}
+                  </Text>
+                </View>
+              ))}
+
+            {especies.length > 1 && (
+              <View
+                style={styles.moreChip}
+              >
+                <Text
+                  style={
+                    styles.moreChipText
+                  }
+                >
+                  y{" "}
+                  {especies.length - 1}{" "}
+                  especie
+                  {especies.length - 1 >
+                  1
+                    ? "s"
+                    : ""}{" "}
+                  más
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+
+          {/* =================================================
+              RESPONSABLE
+          ================================================= */}
+          {meliponario.responsable && (
+            <View
               style={
-                styles.cardTitle
+                styles.responsibleCard
               }
             >
-              Acerca del
-              meliponario
-            </Text>
-
-            <Text
-              style={
-                styles.description
-              }
-            >
-              {
-                meliponario.descripcion
-              }
-            </Text>
-
-            {meliponario
-              .referenciaUbicacion ? (
               <View
                 style={
-                  styles.referenceRow
+                  styles.avatarPlaceholder
                 }
               >
                 <Ionicons
-                  name="navigate-outline"
-                  size={18}
-                  color={
-                    COLORS.primary
-                  }
+                  name="person-outline"
+                  size={29}
+                  color={COLORS.primary}
                 />
+              </View>
+
+              <View
+                style={{
+                  flex: 1,
+                }}
+              >
+                <Text
+                  style={
+                    styles.responsibleName
+                  }
+                >
+                  Responsable:{" "}
+                  {
+                    meliponario
+                      .responsable.nombre
+                  }
+                </Text>
 
                 <Text
                   style={
-                    styles.reference
+                    styles.responsibleDescription
                   }
                 >
                   {
                     meliponario
-                      .referenciaUbicacion
+                      .responsable
+                      .descripcion
                   }
                 </Text>
               </View>
-            ) : null}
-          </View>
 
-          {/* Especies */}
+              <Ionicons
+                name="chevron-forward"
+                size={22}
+                color={COLORS.gray}
+              />
+            </View>
+          )}
+
+          {/* =================================================
+              SOBRE EL MELIPONARIO
+          ================================================= */}
           <Text
-            style={
-              styles.sectionTitle
-            }
+            style={styles.sectionTitle}
+          >
+            Sobre este meliponario
+          </Text>
+
+          <Text
+            style={styles.description}
+          >
+            {meliponario.descripcion}
+          </Text>
+
+          {meliponario
+            .referenciaUbicacion && (
+            <View
+              style={
+                styles.referenceBox
+              }
+            >
+              <Ionicons
+                name="navigate-outline"
+                size={20}
+                color={COLORS.primary}
+              />
+
+              <Text
+                style={
+                  styles.referenceText
+                }
+              >
+                {
+                  meliponario
+                    .referenciaUbicacion
+                }
+              </Text>
+            </View>
+          )}
+
+          {/* No mostramos:
+              - tipo de estructura
+              - materiales
+              - vegetación
+
+              Esos datos quedarán en Inspecciones.
+          */}
+
+          <View style={styles.divider} />
+
+          {/* =================================================
+              ESPECIES REGISTRADAS
+          ================================================= */}
+          <Text
+            style={styles.sectionTitle}
           >
             Especies registradas
           </Text>
 
-          {especies.length > 0 ? (
-            especies.map(
-              (especie) => (
+          {especies.length === 0 ? (
+            <Text style={styles.empty}>
+              No hay especies registradas.
+            </Text>
+          ) : (
+            especies.map((especie) => (
+              <View
+                key={especie.nombre}
+                style={styles.speciesCard}
+              >
+                {/* Foto provisional */}
                 <View
-                  key={especie}
                   style={
-                    styles.speciesCard
+                    styles.speciesPhoto
                   }
                 >
-                  <View
+                  <Ionicons
+                    name="leaf-outline"
+                    size={28}
+                    color={COLORS.primary}
+                  />
+                </View>
+
+                {/* Nombre */}
+                <View
+                  style={
+                    styles.speciesInfo
+                  }
+                >
+                  <Text
                     style={
-                      styles.speciesIcon
+                      styles.speciesName
                     }
                   >
-                    <Ionicons
-                      name="leaf-outline"
-                      size={25}
-                      color={
-                        COLORS.primary
-                      }
-                    />
-                  </View>
+                    {especie.nombre}
+                  </Text>
 
-                  <View
-                    style={{
-                      flex: 1,
-                    }}
-                  >
-                    <Text
+                  {especie.nombreMaya && (
+                    <View
                       style={
-                        styles.speciesName
+                        styles.mayaRow
                       }
                     >
-                      {especie}
-                    </Text>
+                      <Text
+                        style={
+                          styles.mayaBee
+                        }
+                      >
+                        ✿
+                      </Text>
 
-                    <Text
-                      style={
-                        styles.speciesCaption
-                      }
-                    >
-                      Abeja nativa
-                      sin aguijón
-                    </Text>
-                  </View>
+                      <Text
+                        style={
+                          styles.mayaName
+                        }
+                      >
+                        {
+                          especie.nombreMaya
+                        }
+                      </Text>
+                    </View>
+                  )}
                 </View>
-              )
-            )
-          ) : (
-            <Text
-              style={styles.empty}
-            >
-              No hay especies
-              registradas.
-            </Text>
+
+                {/* Audio futuro */}
+                <TouchableOpacity
+                  style={
+                    styles.audioButton
+                  }
+                >
+                  <Ionicons
+                    name="volume-medium-outline"
+                    size={20}
+                    color={COLORS.primary}
+                  />
+                </TouchableOpacity>
+
+                {/* Cajas tecnificadas */}
+                <View
+                  style={
+                    styles.housingBox
+                  }
+                >
+                  <Ionicons
+                    name="layers-outline"
+                    size={21}
+                    color={COLORS.primary}
+                  />
+
+                  <Text
+                    style={
+                      styles.housingLabel
+                    }
+                  >
+                    Cajas
+                  </Text>
+
+                  <Text
+                    style={
+                      styles.housingValue
+                    }
+                  >
+                    {especie.cajasTecnificadas ??
+                      0}
+                  </Text>
+                </View>
+
+                {/* Jobones */}
+                <View
+                  style={[
+                    styles.housingBox,
+                    styles.jobonBox,
+                  ]}
+                >
+                  <Ionicons
+                    name="ellipse-outline"
+                    size={21}
+                    color={
+                      COLORS.honey ??
+                      COLORS.primary
+                    }
+                  />
+
+                  <Text
+                    style={
+                      styles.housingLabel
+                    }
+                  >
+                    Jobones
+                  </Text>
+
+                  <Text
+                    style={
+                      styles.housingValue
+                    }
+                  >
+                    {especie.jobones ?? 0}
+                  </Text>
+                </View>
+              </View>
+            ))
           )}
 
-          {/* Productos */}
+          {/* =================================================
+              PRODUCTOS
+          ================================================= */}
           <View
             style={
               styles.sectionHeader
             }
           >
             <Text
-              style={
-                styles.sectionTitle
-              }
+              style={[
+                styles.sectionTitle,
+                {
+                  marginBottom: 0,
+                },
+              ]}
             >
-              Productos
-              disponibles
+              Productos disponibles
             </Text>
+
+            {productos.length > 0 && (
+              <TouchableOpacity>
+                <Text
+                  style={
+                    styles.viewAll
+                  }
+                >
+                  Ver todos →
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {productos.length > 0 ? (
-            <View
-              style={
-                styles.productsContainer
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={
+                false
+              }
+              contentContainerStyle={
+                styles.productsRow
               }
             >
               {productos.map(
                 (producto) => (
                   <View
-                    key={producto}
+                    key={
+                      producto.id ??
+                      producto.nombre
+                    }
                     style={
                       styles.productCard
                     }
                   >
                     <View
                       style={
-                        styles.productIcon
+                        styles.productImage
                       }
                     >
                       <Ionicons
                         name="cube-outline"
-                        size={23}
+                        size={38}
                         color={
                           COLORS.honey ??
                           COLORS.primary
@@ -414,132 +609,229 @@ export default function MeliponarioDetailScreen({
                     </View>
 
                     <Text
+                      numberOfLines={2}
                       style={
                         styles.productName
                       }
                     >
-                      {producto}
+                      {producto.nombre}
                     </Text>
+
+                    <Text
+                      style={
+                        styles.productPresentation
+                      }
+                    >
+                      {
+                        producto.presentacion
+                      }
+                    </Text>
+
+                    <View
+                      style={
+                        styles.availableBadge
+                      }
+                    >
+                      <Ionicons
+                        name="storefront-outline"
+                        size={14}
+                        color={
+                          COLORS.honey ??
+                          COLORS.primary
+                        }
+                      />
+
+                      <Text
+                        style={
+                          styles.availableText
+                        }
+                      >
+                        Disponible
+                      </Text>
+                    </View>
                   </View>
                 )
               )}
-            </View>
+            </ScrollView>
           ) : (
             <View
-              style={
-                styles.emptyCard
-              }
+              style={styles.emptyBox}
             >
               <Ionicons
                 name="cube-outline"
-                size={26}
-                color={
-                  COLORS.gray
-                }
+                size={27}
+                color={COLORS.gray}
               />
 
               <Text
-                style={
-                  styles.empty
-                }
+                style={styles.empty}
               >
-                Este meliponario
-                no tiene productos
+                Este meliponario no
+                tiene productos
                 registrados.
               </Text>
             </View>
           )}
 
-          {/* Punto de venta */}
-          {productos.length >
-            0 && (
+          {/* =================================================
+              PUNTO DE VENTA
+          ================================================= */}
+          {puntoVenta && (
             <>
-              <Text
+              <View
                 style={
-                  styles.sectionTitle
+                  styles.saleTitleRow
                 }
               >
-                Punto de venta
-              </Text>
+                <Ionicons
+                  name="storefront-outline"
+                  size={25}
+                  color={COLORS.primary}
+                />
+
+                <Text
+                  style={[
+                    styles.sectionTitle,
+                    {
+                      marginBottom: 0,
+                      marginLeft: 8,
+                    },
+                  ]}
+                >
+                  Punto de venta
+                </Text>
+              </View>
 
               <View
                 style={
-                  styles.card
+                  styles.saleCard
                 }
               >
+                {/* Placeholder del mini mapa */}
                 <View
                   style={
-                    styles.pointRow
+                    styles.mapPlaceholder
                   }
                 >
                   <Ionicons
-                    name="storefront-outline"
-                    size={25}
-                    color={
-                      COLORS.primary
-                    }
+                    name="location"
+                    size={38}
+                    color={COLORS.primary}
                   />
 
-                  <View
-                    style={{
-                      flex: 1,
-                      marginLeft: 10,
-                    }}
+                  <Text
+                    style={
+                      styles.mapCity
+                    }
                   >
-                    <Text
-                      style={
-                        styles.pointTitle
-                      }
-                    >
-                      {
-                        meliponario.nombre
-                      }
-                    </Text>
+                    {
+                      meliponario
+                        .municipio
+                    }
+                  </Text>
+                </View>
+
+                <View
+                  style={
+                    styles.saleInfo
+                  }
+                >
+                  <Text
+                    style={
+                      styles.saleName
+                    }
+                  >
+                    {
+                      puntoVenta.nombre
+                    }
+                  </Text>
+
+                  <Text
+                    style={
+                      styles.saleAddress
+                    }
+                  >
+                    {
+                      puntoVenta.direccion
+                    }
+                  </Text>
+
+                  <TouchableOpacity
+                    style={
+                      styles.locationButton
+                    }
+                  >
+                    <Ionicons
+                      name="location"
+                      size={17}
+                      color={COLORS.primary}
+                    />
 
                     <Text
                       style={
-                        styles.pointText
+                        styles.locationButtonText
                       }
                     >
-                      {
-                        meliponario
-                          .municipio
-                      }
-                      , Yucatán
+                      Ver ubicación
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
               </View>
             </>
           )}
-
-          {/* Acciones */}
-          <View
-            style={
-              styles.actions
-            }
-          >
-            <PrimaryButton
-              title="Cómo llegar"
-              icon="navigate-outline"
-              outline
-              style={{
-                flex: 1,
-                marginRight: 5,
-              }}
-            />
-
-            <PrimaryButton
-              title="Contactar"
-              icon="chatbubble-outline"
-              style={{
-                flex: 1,
-                marginLeft: 5,
-              }}
-            />
-          </View>
         </View>
       </ScrollView>
+
+      {/* =================================================
+          ACCIONES FIJAS
+      ================================================= */}
+      <View
+        style={
+          styles.bottomActions
+        }
+      >
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            styles.outlineButton,
+          ]}
+        >
+          <Ionicons
+            name="navigate-outline"
+            size={22}
+            color={COLORS.primary}
+          />
+
+          <Text
+            style={
+              styles.outlineButtonText
+            }
+          >
+            Cómo llegar
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            styles.primaryButton,
+          ]}
+        >
+          <Ionicons
+            name="chatbubble-outline"
+            size={21}
+            color={COLORS.white}
+          />
+
+          <Text
+            style={
+              styles.primaryButtonText
+            }
+          >
+            Contactar productor
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -549,22 +841,23 @@ const styles =
     screen: {
       flex: 1,
       backgroundColor:
-        COLORS.cream,
+        COLORS.cream ?? "#FAF8F1",
     },
 
-    scroll: {
-      paddingBottom: 30,
+    scrollContent: {
+      paddingBottom: 110,
     },
+
+    /* HERO */
 
     hero: {
-      height: 260,
+      height: 270,
       position: "relative",
-      backgroundColor:
-        COLORS.grayLight ??
-        "#EDF4EA",
+      overflow: "hidden",
+      backgroundColor: "#E8EFE4",
     },
 
-    heroContent: {
+    heroPlaceholder: {
       flex: 1,
       alignItems: "center",
       justifyContent: "center",
@@ -579,47 +872,83 @@ const styles =
       fontWeight: "900",
     },
 
-    circleButton: {
-      position: "absolute",
-      top: 14,
-      width: 42,
-      height: 42,
-      borderRadius: 21,
-      zIndex: 5,
-      backgroundColor:
-        "rgba(255,255,255,0.95)",
+    heroButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       alignItems: "center",
       justifyContent: "center",
+      backgroundColor:
+        "rgba(255,255,255,0.94)",
+
+      shadowColor: "#000",
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      elevation: 3,
     },
 
     backButton: {
-      left: 14,
+      position: "absolute",
+      top: 16,
+      left: 16,
     },
 
-    shareButton: {
-      right: 14,
+    heroRightActions: {
+      position: "absolute",
+      top: 16,
+      right: 16,
+      flexDirection: "row",
+      gap: 9,
     },
+
+    galleryIndicators: {
+      position: "absolute",
+      bottom: 15,
+      left: 0,
+      right: 0,
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: 6,
+    },
+
+    galleryDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: COLORS.white,
+      backgroundColor:
+        "rgba(255,255,255,0.35)",
+    },
+
+    galleryDotActive: {
+      backgroundColor:
+        COLORS.white,
+    },
+
+    /* BODY */
 
     body: {
-      padding: 18,
-      marginTop: -18,
       backgroundColor:
-        COLORS.cream,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
+        COLORS.cream ?? "#FAF8F1",
+      borderTopLeftRadius: 26,
+      borderTopRightRadius: 26,
+      marginTop: -18,
+      paddingHorizontal: 18,
+      paddingTop: 20,
     },
 
     titleRow: {
       flexDirection: "row",
       alignItems: "flex-start",
-      marginBottom: 16,
     },
 
     title: {
       color:
         COLORS.primaryDark ??
         COLORS.primary,
-      fontSize: 25,
+      fontSize: 27,
+      lineHeight: 31,
       fontWeight: "900",
     },
 
@@ -630,27 +959,100 @@ const styles =
     },
 
     location: {
-      color: COLORS.gray,
       marginLeft: 4,
-      fontSize: 13,
+      color: COLORS.gray,
+      fontSize: 14,
     },
 
-    card: {
-      backgroundColor:
-        COLORS.white,
+    /* CHIPS */
+
+    chipsRow: {
+      alignItems: "center",
+      paddingVertical: 15,
+      gap: 7,
+    },
+
+    speciesChip: {
+      height: 36,
+      flexDirection: "row",
+      alignItems: "center",
       borderWidth: 1,
       borderColor:
-        COLORS.border,
+        COLORS.border ?? "#E1E1DB",
       borderRadius: 18,
-      padding: 16,
-      marginBottom: 20,
+      backgroundColor: COLORS.white,
+      paddingHorizontal: 13,
     },
 
-    cardTitle: {
+    speciesChipText: {
+      marginLeft: 6,
       color:
         COLORS.primaryDark ??
         COLORS.primary,
-      fontSize: 16,
+      fontSize: 12,
+      fontWeight: "700",
+    },
+
+    moreChip: {
+      height: 36,
+      justifyContent: "center",
+      borderRadius: 18,
+      paddingHorizontal: 13,
+      backgroundColor: "#EEF1EC",
+    },
+
+    moreChipText: {
+      color:
+        COLORS.primaryDark ??
+        COLORS.primary,
+      fontSize: 12,
+    },
+
+    /* RESPONSABLE */
+
+    responsibleCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor:
+        COLORS.border ?? "#E1E1DB",
+      borderRadius: 18,
+      padding: 14,
+      backgroundColor: COLORS.white,
+      marginBottom: 18,
+    },
+
+    avatarPlaceholder: {
+      width: 58,
+      height: 58,
+      borderRadius: 29,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#EDF4EA",
+      marginRight: 12,
+    },
+
+    responsibleName: {
+      color:
+        COLORS.primaryDark ??
+        COLORS.primary,
+      fontSize: 14,
+      fontWeight: "900",
+    },
+
+    responsibleDescription: {
+      color: COLORS.gray,
+      fontSize: 12,
+      marginTop: 4,
+    },
+
+    /* GENERAL */
+
+    sectionTitle: {
+      color:
+        COLORS.primaryDark ??
+        COLORS.primary,
+      fontSize: 19,
       fontWeight: "900",
       marginBottom: 8,
     },
@@ -661,181 +1063,374 @@ const styles =
       lineHeight: 21,
     },
 
-    referenceRow: {
+    referenceBox: {
       flexDirection: "row",
       alignItems: "center",
-      marginTop: 14,
-      paddingTop: 12,
-      borderTopWidth: 1,
-      borderTopColor:
-        COLORS.border,
+      marginTop: 13,
     },
 
-    reference: {
+    referenceText: {
       flex: 1,
       marginLeft: 7,
-      color:
-        COLORS.primaryDark ??
-        COLORS.primary,
+      color: COLORS.gray,
       fontSize: 12,
     },
 
-    sectionHeader: {
-      marginTop: 4,
+    divider: {
+      height: 1,
+      backgroundColor:
+        COLORS.border ?? "#E1E1DB",
+      marginVertical: 18,
     },
 
-    sectionTitle: {
-      color:
-        COLORS.primaryDark ??
-        COLORS.primary,
-      fontSize: 18,
-      fontWeight: "900",
-      marginBottom: 10,
-      marginTop: 6,
-    },
+    /* ESPECIES */
 
     speciesCard: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor:
-        COLORS.white,
-      borderWidth: 1,
-      borderColor:
-        COLORS.border,
-      borderRadius: 16,
-      padding: 12,
-      marginBottom: 9,
+      borderBottomWidth: 1,
+      borderBottomColor:
+        COLORS.border ?? "#E1E1DB",
+      paddingVertical: 10,
     },
 
-    speciesIcon: {
-      width: 52,
-      height: 52,
+    speciesPhoto: {
+      width: 68,
+      height: 68,
       borderRadius: 14,
       alignItems: "center",
       justifyContent: "center",
-      marginRight: 12,
-      backgroundColor:
-        COLORS.grayLight ??
-        "#EDF4EA",
+      backgroundColor: "#E6EFE2",
+      marginRight: 11,
+    },
+
+    speciesInfo: {
+      flex: 1,
+      minWidth: 105,
     },
 
     speciesName: {
       color:
         COLORS.primaryDark ??
         COLORS.primary,
-      fontSize: 15,
       fontWeight: "900",
+      fontSize: 13,
     },
 
-    speciesCaption: {
-      color: COLORS.gray,
-      fontSize: 11,
-      marginTop: 3,
-    },
-
-    productsContainer: {
-      marginBottom: 14,
-    },
-
-    productCard: {
+    mayaRow: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor:
-        COLORS.white,
-      borderWidth: 1,
-      borderColor:
-        COLORS.border,
-      borderRadius: 16,
-      padding: 12,
-      marginBottom: 8,
+      marginTop: 5,
     },
 
-    productIcon: {
-      width: 44,
-      height: 44,
+    mayaBee: {
+      color:
+        COLORS.honey ?? "#C79218",
+      marginRight: 4,
+    },
+
+    mayaName: {
+      color: COLORS.gray,
+      fontSize: 11,
+    },
+
+    audioButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: COLORS.white,
+      borderWidth: 1,
+      borderColor:
+        COLORS.border ?? "#E1E1DB",
+      marginRight: 6,
+    },
+
+    housingBox: {
+      width: 62,
+      minHeight: 58,
       borderRadius: 12,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor:
-        COLORS.cream,
-      marginRight: 10,
+      backgroundColor: "#EDF4EA",
+      marginLeft: 4,
+      padding: 4,
     },
 
-    productName: {
-      flex: 1,
+    jobonBox: {
+      backgroundColor: "#FFF8DE",
+    },
+
+    housingLabel: {
+      color: COLORS.gray,
+      fontSize: 9,
+      marginTop: 2,
+    },
+
+    housingValue: {
       color:
         COLORS.primaryDark ??
         COLORS.primary,
       fontSize: 14,
+      fontWeight: "900",
+    },
+
+    /* PRODUCTOS */
+
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginTop: 20,
+      marginBottom: 10,
+    },
+
+    viewAll: {
+      color:
+        COLORS.primaryDark ??
+        COLORS.primary,
+      fontSize: 12,
+      fontWeight: "800",
+      textDecorationLine:
+        "underline",
+    },
+
+    productsRow: {
+      paddingRight: 14,
+      gap: 9,
+    },
+
+    productCard: {
+      width: 148,
+      borderWidth: 1,
+      borderColor:
+        COLORS.border ?? "#E1E1DB",
+      borderRadius: 17,
+      backgroundColor: COLORS.white,
+      overflow: "hidden",
+      paddingBottom: 10,
+    },
+
+    productImage: {
+      height: 94,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#F2EAD2",
+    },
+
+    productName: {
+      color:
+        COLORS.primaryDark ??
+        COLORS.primary,
+      fontWeight: "900",
+      fontSize: 13,
+      marginHorizontal: 9,
+      marginTop: 7,
+    },
+
+    productPresentation: {
+      color: COLORS.gray,
+      fontSize: 10,
+      marginHorizontal: 9,
+      marginTop: 2,
+    },
+
+    availableBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      marginHorizontal: 8,
+      marginTop: 8,
+      borderRadius: 8,
+      paddingVertical: 5,
+      backgroundColor: "#FFF1B8",
+    },
+
+    availableText: {
+      marginLeft: 5,
+      color: "#9A6A00",
+      fontSize: 10,
       fontWeight: "800",
     },
 
-    emptyCard: {
+    emptyBox: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor:
-        COLORS.white,
+      borderRadius: 15,
       borderWidth: 1,
       borderColor:
-        COLORS.border,
-      borderRadius: 16,
+        COLORS.border ?? "#E1E1DB",
+      backgroundColor: COLORS.white,
       padding: 14,
-      marginBottom: 16,
     },
 
     empty: {
       flex: 1,
-      marginLeft: 8,
       color: COLORS.gray,
-      fontSize: 13,
+      fontSize: 12,
+      marginLeft: 8,
     },
 
-    pointRow: {
+    /* PUNTO DE VENTA */
+
+    saleTitleRow: {
       flexDirection: "row",
       alignItems: "center",
+      marginTop: 22,
+      marginBottom: 10,
     },
 
-    pointTitle: {
+    saleCard: {
+      flexDirection: "row",
+      borderRadius: 18,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor:
+        COLORS.border ?? "#E1E1DB",
+      backgroundColor: COLORS.white,
+      marginBottom: 18,
+    },
+
+    mapPlaceholder: {
+      width: "48%",
+      minHeight: 145,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#CFE5D4",
+    },
+
+    mapCity: {
+      color:
+        COLORS.primaryDark ??
+        COLORS.primary,
+      fontSize: 12,
+      fontWeight: "900",
+      marginTop: 4,
+    },
+
+    saleInfo: {
+      flex: 1,
+      padding: 12,
+      justifyContent: "center",
+    },
+
+    saleName: {
       color:
         COLORS.primaryDark ??
         COLORS.primary,
       fontWeight: "900",
-      fontSize: 14,
+      fontSize: 13,
     },
 
-    pointText: {
+    saleAddress: {
       color: COLORS.gray,
-      fontSize: 12,
-      marginTop: 3,
+      fontSize: 11,
+      lineHeight: 16,
+      marginTop: 4,
     },
 
-    actions: {
+    locationButton: {
       flexDirection: "row",
-      marginTop: 6,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: COLORS.primary,
+      borderRadius: 11,
+      paddingVertical: 8,
+      marginTop: 10,
     },
+
+    locationButtonText: {
+      color: COLORS.primary,
+      fontSize: 11,
+      fontWeight: "900",
+      marginLeft: 5,
+    },
+
+    /* BOTTOM */
+
+    bottomActions: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      flexDirection: "row",
+      paddingHorizontal: 14,
+      paddingTop: 10,
+      paddingBottom: 13,
+      gap: 9,
+      backgroundColor: COLORS.white,
+      borderTopWidth: 1,
+      borderTopColor:
+        COLORS.border ?? "#E1E1DB",
+    },
+
+    actionButton: {
+      flex: 1,
+      minHeight: 52,
+      borderRadius: 15,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    outlineButton: {
+      borderWidth: 1.5,
+      borderColor: COLORS.primary,
+      backgroundColor: COLORS.white,
+    },
+
+    outlineButtonText: {
+      marginLeft: 8,
+      color: COLORS.primary,
+      fontSize: 13,
+      fontWeight: "900",
+    },
+
+    primaryButton: {
+      backgroundColor:
+        COLORS.primary,
+    },
+
+    primaryButtonText: {
+      marginLeft: 8,
+      color: COLORS.white,
+      fontSize: 13,
+      fontWeight: "900",
+    },
+
+    /* NOT FOUND */
 
     notFound: {
       flex: 1,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor:
-        COLORS.cream,
       padding: 24,
+      backgroundColor:
+        COLORS.cream ?? "#FAF8F1",
     },
 
     notFoundTitle: {
-      marginTop: 12,
       color:
         COLORS.primaryDark ??
         COLORS.primary,
       fontSize: 20,
       fontWeight: "900",
+      marginTop: 10,
     },
 
-    notFoundText: {
-      color: COLORS.gray,
-      textAlign: "center",
-      marginTop: 6,
-      marginBottom: 20,
+    backAction: {
+      marginTop: 18,
+      backgroundColor:
+        COLORS.primary,
+      borderRadius: 12,
+      paddingHorizontal: 25,
+      paddingVertical: 12,
+    },
+
+    backActionText: {
+      color: COLORS.white,
+      fontWeight: "900",
     },
   });
