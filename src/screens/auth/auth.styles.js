@@ -1,0 +1,32 @@
+import { StyleSheet } from "react-native";
+import { COLORS } from "../../theme/colors";
+
+export const authStyles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: COLORS.cream },
+  content: { flexGrow: 1, padding: 22, paddingTop: 24, maxWidth: 540, width: "100%", alignSelf: "center" },
+  backButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border, alignItems: "center", justifyContent: "center" },
+  logoWrap: { alignItems: "center", marginTop: 6, marginBottom: 15 },
+  title: { color: COLORS.primaryDark, fontSize: 28, lineHeight: 33, fontWeight: "900", marginTop: 5 },
+  subtitle: { color: COLORS.gray, fontSize: 14, lineHeight: 21, marginTop: 7, marginBottom: 18 },
+  label: { color: COLORS.primaryDark, fontSize: 12, fontWeight: "800", marginBottom: 6, marginTop: 12 },
+  input: { minHeight: 52, borderWidth: 1, borderColor: COLORS.border, borderRadius: 15, paddingHorizontal: 14, color: COLORS.text, backgroundColor: COLORS.white, fontSize: 14 },
+  passwordRow: { minHeight: 52, borderWidth: 1, borderColor: COLORS.border, borderRadius: 15, paddingLeft: 14, paddingRight: 8, backgroundColor: COLORS.white, flexDirection: "row", alignItems: "center" },
+  passwordInput: { flex: 1, color: COLORS.text, fontSize: 14 },
+  eye: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
+  errorBox: { marginTop: 13, borderRadius: 12, padding: 11, backgroundColor: COLORS.errorSoft || "#FDECEC" },
+  errorText: { color: COLORS.error || "#B42318", fontSize: 12, lineHeight: 17 },
+  infoBox: { marginTop: 13, borderRadius: 12, padding: 11, backgroundColor: COLORS.primarySoft || "#E8F0E9" },
+  infoText: { color: COLORS.primaryDark, fontSize: 12, lineHeight: 17 },
+  primary: { minHeight: 54, borderRadius: 28, backgroundColor: COLORS.primaryDark, alignItems: "center", justifyContent: "center", marginTop: 22 },
+  primaryDisabled: { opacity: 0.55 },
+  primaryText: { color: COLORS.white, fontSize: 15, fontWeight: "900" },
+  linkButton: { alignSelf: "center", padding: 10, marginTop: 10 },
+  link: { color: COLORS.primary, fontSize: 13, fontWeight: "800" },
+  bottomText: { color: COLORS.gray, textAlign: "center", fontSize: 12, marginTop: 18 },
+  inlineLink: { color: COLORS.primaryDark, fontWeight: "900" },
+  row: { flexDirection: "row", gap: 8 },
+  choice: { flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 14, paddingHorizontal: 11, minHeight: 52, justifyContent: "center", backgroundColor: COLORS.white },
+  choiceActive: { backgroundColor: COLORS.primaryDark, borderColor: COLORS.primaryDark },
+  choiceText: { color: COLORS.gray, textAlign: "center", fontSize: 11, fontWeight: "800" },
+  choiceTextActive: { color: COLORS.white },
+});
