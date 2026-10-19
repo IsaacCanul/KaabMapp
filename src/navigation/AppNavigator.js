@@ -1,45 +1,25 @@
 import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import MainTabs from "./MainTabs";
+import AuthStack from "./AuthStack";
+import { navigationRef } from "./navigationRef";
 
-import {
-  NavigationContainer,
-} from "@react-navigation/native";
-
-import {
-  createNativeStackNavigator,
-} from "@react-navigation/native-stack";
-
-import WelcomeScreen from "../screens/auth/WelcomeScreen";
-import LoginScreen from "../screens/auth/LoginScreen";
-import RegisterScreen from "../screens/auth/RegisterScreen";
-
-const Stack = createNativeStackNavigator();
+const Root = createNativeStackNavigator();
 
 export default function AppNavigator() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Welcome"
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen
-          name="Welcome"
-          component={WelcomeScreen}
+    <NavigationContainer ref={navigationRef}>
+      <Root.Navigator screenOptions={{ headerShown: false }} initialRouteName="MainApp">
+        {/* La aplicación se puede explorar sin iniciar sesión. */}
+        <Root.Screen name="MainApp" component={MainTabs} />
+        {/* Login/registro se muestran aparte; la navbar principal no cambia ni se duplica. */}
+        <Root.Screen
+          name="Auth"
+          component={AuthStack}
+          options={{ presentation: "modal", animation: "slide_from_bottom" }}
         />
-
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
-        />
-
-        <Stack.Screen
-          name="Registro"
-          component={RegisterScreen}
-        />
-          
-      
-      </Stack.Navigator>
+      </Root.Navigator>
     </NavigationContainer>
   );
 }
