@@ -19,30 +19,39 @@ import EmailVerificationPendingScreen
 import EmailVerifiedScreen
   from "../screens/auth/EmailVerifiedScreen";
 
+
 const Stack =
   createNativeStackNavigator();
+
 
 export default function AuthStack() {
   return (
     <Stack.Navigator
       initialRouteName="Login"
       screenOptions={{
-        headerShown: false,
+        headerShown:
+          false,
       }}
     >
       <Stack.Screen
         name="Login"
-        component={LoginScreen}
+        component={
+          LoginScreen
+        }
       />
 
       <Stack.Screen
         name="Register"
-        component={RegisterScreen}
+        component={
+          RegisterScreen
+        }
       />
 
       <Stack.Screen
         name="ForgotPassword"
-        component={ForgotPasswordScreen}
+        component={
+          ForgotPasswordScreen
+        }
       />
 
       <Stack.Screen

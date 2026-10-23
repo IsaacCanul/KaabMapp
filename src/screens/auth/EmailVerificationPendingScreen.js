@@ -1,14 +1,10 @@
 import React, {
-  useCallback,
   useState,
 } from "react";
 
 import {
-  ActivityIndicator,
-  Alert,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -20,194 +16,193 @@ import {
   Ionicons,
 } from "@expo/vector-icons";
 
-import {
-  useFocusEffect,
-} from "@react-navigation/native";
-
-import AppLogo
-  from "../../components/AppLogo";
+import PrimaryButton
+  from "../../components/PrimaryButton";
 
 import {
-  comprobarVerificacionCorreo,
-  reenviarCorreoConfirmacion,
+  resendVerificationRequest,
 } from "../../services/authApi";
 
 import {
   COLORS,
 } from "../../theme/colors";
 
+
 export default function EmailVerificationPendingScreen({
   navigation,
   route,
 }) {
   const email =
-    route.params?.email || "";
+    route?.params
+      ?.email ??
+    "";
 
-  const [checking, setChecking] =
+  const [
+    loading,
+    setLoading,
+  ] =
     useState(false);
 
-  const [resending, setResending] =
-    useState(false);
+  const [
+    message,
+    setMessage,
+  ] =
+    useState("");
 
-  const verificarEstado =
-    useCallback(async () => {
-      if (!email || checking) {
-        return;
-      }
+  const [
+    error,
+    setError,
+  ] =
+    useState("");
+
+
+  const handleResend =
+    async () => {
+      setMessage("");
+      setError("");
 
       try {
-        setChecking(true);
+        setLoading(true);
 
-        const response =
-          await comprobarVerificacionCorreo(
-            email
-          );
-
-        if (
-          response?.verified === true
-        ) {
-          navigation.replace(
-            "EmailVerified",
-            {
-              email,
-            }
-          );
-        }
-      } catch (error) {
-        console.log(
-          "Error comprobando correo:",
-          error
+        await resendVerificationRequest(
+          email
         );
+
+        setMessage(
+          "Te enviamos un nuevo enlace de confirmación."
+        );
+
+      } catch (err) {
+        console.error(
+          "RESEND ERROR:",
+          err
+        );
+
+        setError(
+          err?.message ||
+            "No se pudo reenviar el correo."
+        );
+
       } finally {
-        setChecking(false);
+        setLoading(false);
       }
-    }, [
-      email,
-      checking,
-      navigation,
-    ]);
+    };
 
-  /*
-   * Cada vez que el usuario vuelve
-   * a esta pantalla comprobamos
-   * nuevamente con la API.
-   *
-   * Esto resulta útil si salió de
-   * KaabMap para abrir su correo.
-   */
-  useFocusEffect(
-    useCallback(() => {
-      verificarEstado();
-    }, [verificarEstado])
-  );
-
-  const reenviar = async () => {
-    try {
-      setResending(true);
-
-      await reenviarCorreoConfirmacion(
-        email
-      );
-
-      Alert.alert(
-        "Correo enviado",
-        "Te enviamos un nuevo enlace de confirmación."
-      );
-    } catch (error) {
-      Alert.alert(
-        "No se pudo reenviar",
-        error?.message ||
-          "Inténtalo nuevamente."
-      );
-    } finally {
-      setResending(false);
-    }
-  };
 
   return (
     <SafeAreaView
-      style={styles.screen}
+      style={
+        styles.screen
+      }
     >
-      <View style={styles.container}>
-        <AppLogo />
-
+      <View
+        style={
+          styles.content
+        }
+      >
         <View
-          style={styles.iconContainer}
+          style={
+            styles.iconContainer
+          }
         >
           <Ionicons
             name="mail-outline"
-            size={42}
-            color={COLORS.primary}
+            size={48}
+            color={
+              COLORS.primary
+            }
           />
         </View>
 
-        <Text style={styles.title}>
+        <Text
+          style={
+            styles.title
+          }
+        >
           Revisa tu correo
         </Text>
 
-        <Text style={styles.description}>
-          Enviamos un enlace de
-          confirmación a:
+        <Text
+          style={
+            styles.text
+          }
+        >
+          Te enviamos un enlace
+          para confirmar tu cuenta
+          a:
         </Text>
 
-        <Text style={styles.email}>
+        <Text
+          style={
+            styles.email
+          }
+        >
           {email}
         </Text>
 
-        <View style={styles.warning}>
-          <Ionicons
-            name="time-outline"
-            size={22}
-            color="#8A6200"
-          />
-
-          <Text
-            style={styles.warningText}
-          >
-            Esperando confirmación de
-            correo. Aún no puedes
-            acceder a tu cuenta.
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={verificarEstado}
-          disabled={checking}
+        <Text
+          style={
+            styles.help
+          }
         >
-          {checking ? (
-            <ActivityIndicator
-              color="#FFFFFF"
-            />
-          ) : (
-            <Text
-              style={
-                styles.primaryButtonText
-              }
-            >
-              Ya confirmé mi correo
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        <Text style={styles.help}>
-          ¿No recibiste el correo?
+          Abre el mensaje y pulsa
+          el enlace de confirmación.
         </Text>
 
-        <TouchableOpacity
-          onPress={reenviar}
-          disabled={resending}
-        >
-          <Text style={styles.link}>
-            {resending
-              ? "Reenviando..."
-              : "Reenviar enlace"}
+        {message ? (
+          <Text
+            style={
+              styles.success
+            }
+          >
+            {message}
           </Text>
-        </TouchableOpacity>
+        ) : null}
+
+        {error ? (
+          <Text
+            style={
+              styles.error
+            }
+          >
+            {error}
+          </Text>
+        ) : null}
+
+        <PrimaryButton
+          title={
+            loading
+              ? "Reenviando..."
+              : "Reenviar correo"
+          }
+          outline
+          disabled={
+            loading
+          }
+          onPress={
+            handleResend
+          }
+        />
+
+        <PrimaryButton
+          title="Ir a iniciar sesión"
+          onPress={() =>
+            navigation.navigate(
+              "Login",
+              {
+                email,
+              }
+            )
+          }
+          style={{
+            marginTop: 10,
+          }}
+        />
       </View>
     </SafeAreaView>
   );
 }
+
 
 const styles =
   StyleSheet.create({
@@ -217,125 +212,77 @@ const styles =
         COLORS.cream,
     },
 
-    container: {
+    content: {
       flex: 1,
-      paddingHorizontal: 25,
-      justifyContent: "center",
-      alignItems: "center",
-      maxWidth: 480,
-      width: "100%",
-      alignSelf: "center",
+      justifyContent:
+        "center",
+      padding: 28,
     },
 
     iconContainer: {
-      width: 82,
-      height: 82,
-
-      borderRadius: 41,
-
+      width: 90,
+      height: 90,
+      borderRadius: 45,
+      alignSelf:
+        "center",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
       backgroundColor:
-        COLORS.primarySoft,
-
-      alignItems: "center",
-      justifyContent: "center",
-
-      marginTop: 32,
+        "#EAF4EC",
       marginBottom: 22,
     },
 
     title: {
+      textAlign:
+        "center",
       color:
-        COLORS.primaryDark,
-
-      fontSize: 25,
-
+        COLORS.primaryDark ??
+        COLORS.primary,
+      fontSize: 27,
       fontWeight: "900",
-
-      textAlign: "center",
     },
 
-    description: {
-      color: COLORS.gray,
-
-      textAlign: "center",
-
+    text: {
+      textAlign:
+        "center",
+      color:
+        COLORS.gray,
       marginTop: 12,
-
-      fontSize: 14,
     },
 
     email: {
+      textAlign:
+        "center",
       color:
-        COLORS.primaryDark,
-
-      fontWeight: "800",
-
-      marginTop: 5,
-    },
-
-    warning: {
-      width: "100%",
-
-      marginTop: 24,
-
-      borderRadius: 16,
-
-      backgroundColor: "#FFF2C9",
-
-      padding: 15,
-
-      flexDirection: "row",
-
-      alignItems: "flex-start",
-
-      gap: 10,
-    },
-
-    warningText: {
-      flex: 1,
-
-      color: "#785600",
-
-      fontSize: 12,
-
-      lineHeight: 18,
-    },
-
-    primaryButton: {
-      width: "100%",
-
-      minHeight: 52,
-
-      borderRadius: 26,
-
-      backgroundColor:
-        COLORS.primaryDark,
-
-      alignItems: "center",
-      justifyContent: "center",
-
-      marginTop: 24,
-    },
-
-    primaryButtonText: {
-      color: "#FFFFFF",
-
+        COLORS.primary,
       fontWeight: "900",
+      marginTop: 6,
     },
 
     help: {
-      color: COLORS.gray,
-
-      marginTop: 22,
-
-      fontSize: 12,
+      textAlign:
+        "center",
+      color:
+        COLORS.gray,
+      marginTop: 18,
+      marginBottom: 25,
     },
 
-    link: {
-      color: COLORS.primary,
+    success: {
+      color:
+        COLORS.primary,
+      textAlign:
+        "center",
+      marginBottom: 12,
+    },
 
-      fontWeight: "900",
-
-      marginTop: 5,
+    error: {
+      color:
+        "#B42318",
+      textAlign:
+        "center",
+      marginBottom: 12,
     },
   });

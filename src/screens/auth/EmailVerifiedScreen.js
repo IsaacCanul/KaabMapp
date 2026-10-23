@@ -3,7 +3,6 @@ import React from "react";
 import {
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -15,71 +14,86 @@ import {
   Ionicons,
 } from "@expo/vector-icons";
 
-import AppLogo
-  from "../../components/AppLogo";
+import PrimaryButton
+  from "../../components/PrimaryButton";
 
 import {
   COLORS,
 } from "../../theme/colors";
+
 
 export default function EmailVerifiedScreen({
   navigation,
 }) {
   return (
     <SafeAreaView
-      style={styles.screen}
+      style={
+        styles.screen
+      }
     >
-      <View style={styles.container}>
-        <AppLogo />
-
-        <View style={styles.success}>
+      <View
+        style={
+          styles.content
+        }
+      >
+        <View
+          style={
+            styles.iconContainer
+          }
+        >
           <Ionicons
-            name="checkmark"
-            size={48}
-            color="#FFFFFF"
+            name="checkmark-circle"
+            size={72}
+            color={
+              COLORS.primary
+            }
           />
         </View>
 
-        <Text style={styles.title}>
+        <Text
+          style={
+            styles.title
+          }
+        >
           Correo confirmado
         </Text>
 
         <Text
-          style={styles.description}
+          style={
+            styles.text
+          }
         >
-          Tu correo electrónico fue
-          verificado correctamente.
-          {"\n\n"}
-          Ya puedes utilizar tu cuenta
-          de KaabMap.
+          Tu correo electrónico
+          fue confirmado
+          correctamente.
         </Text>
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => {
-            navigation.reset({
-              index: 0,
-
-              routes: [
-                {
-                  name: "Login",
-                },
-              ],
-            });
-          }}
+        <Text
+          style={
+            styles.text
+          }
         >
-          <Text
-            style={
-              styles.buttonText
-            }
-          >
-            Iniciar sesión
-          </Text>
-        </TouchableOpacity>
+          Ya puedes iniciar sesión
+          en KaabMap.
+        </Text>
+
+        <PrimaryButton
+          title="Iniciar sesión"
+          icon="log-in-outline"
+          onPress={() =>
+            navigation.replace(
+              "Login"
+            )
+          }
+          style={{
+            marginTop: 28,
+          }}
+        />
       </View>
     </SafeAreaView>
   );
 }
+
 
 const styles =
   StyleSheet.create({
@@ -89,76 +103,45 @@ const styles =
         COLORS.cream,
     },
 
-    container: {
+    content: {
       flex: 1,
-
-      alignItems: "center",
-      justifyContent: "center",
-
-      paddingHorizontal: 25,
-
-      maxWidth: 480,
-
-      width: "100%",
-
-      alignSelf: "center",
+      justifyContent:
+        "center",
+      padding: 28,
     },
 
-    success: {
-      width: 90,
-      height: 90,
-
-      borderRadius: 45,
-
-      backgroundColor: "#14764C",
-
-      alignItems: "center",
-      justifyContent: "center",
-
-      marginTop: 32,
+    iconContainer: {
+      width: 110,
+      height: 110,
+      borderRadius: 55,
+      alignSelf:
+        "center",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      backgroundColor:
+        "#EAF4EC",
       marginBottom: 24,
     },
 
     title: {
+      textAlign:
+        "center",
       color:
-        COLORS.primaryDark,
-
-      fontSize: 27,
-
+        COLORS.primaryDark ??
+        COLORS.primary,
+      fontSize: 28,
       fontWeight: "900",
     },
 
-    description: {
-      marginTop: 12,
-
-      color: COLORS.gray,
-
+    text: {
+      textAlign:
+        "center",
+      color:
+        COLORS.gray,
       fontSize: 14,
-
-      lineHeight: 21,
-
-      textAlign: "center",
-    },
-
-    button: {
-      width: "100%",
-
-      minHeight: 52,
-
-      borderRadius: 26,
-
-      marginTop: 30,
-
-      backgroundColor:
-        COLORS.primaryDark,
-
-      alignItems: "center",
-      justifyContent: "center",
-    },
-
-    buttonText: {
-      color: "#FFFFFF",
-
-      fontWeight: "900",
+      lineHeight: 20,
+      marginTop: 8,
     },
   });

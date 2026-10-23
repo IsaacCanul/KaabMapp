@@ -22,6 +22,8 @@
     },
     "plugins": [
       "expo-secure-store"
-    ]
+    ],
+    "scheme": "kaabmap"
+
   }
 }
