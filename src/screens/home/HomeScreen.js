@@ -95,26 +95,38 @@ export default function HomeScreen({
         <View style={styles.header}>
           <AppLogo />
 
-          <TouchableOpacity
-            style={
-              styles.accountButton
-            }
-            onPress={() =>
-              navigation
-                .getParent()
-                ?.navigate(
-                  "Cuenta"
-                )
-            }
-          >
-            <Ionicons
-              name="person-outline"
-              size={22}
-              color={
-                COLORS.primary
-              }
-            />
-          </TouchableOpacity>
+    <TouchableOpacity
+      style={
+        styles.accountButton
+      }
+      onPress={() =>
+        navigation.navigate(
+          "Notifications"
+        )
+      }
+    >
+      <Ionicons
+        name="notifications-outline"
+        size={23}
+        color={
+          COLORS.primary
+        }
+      />
+
+      <View
+        style={
+          styles.notificationBadge
+        }
+      >
+        <Text
+          style={
+            styles.notificationBadgeText
+          }
+        >
+          2
+        </Text>
+      </View>
+    </TouchableOpacity>
         </View>
 
         {/* Hero */}
@@ -418,4 +430,42 @@ const styles =
       marginTop: 10,
       color: COLORS.gray,
     },
+
+    notificationBadge: {
+  position: "absolute",
+
+    top: -2,
+
+    right: -2,
+
+    minWidth: 17,
+
+    height: 17,
+
+    borderRadius: 9,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    paddingHorizontal: 4,
+
+    backgroundColor:
+      COLORS.honey ??
+      "#D89E16",
+
+    borderWidth: 2,
+
+    borderColor:
+      COLORS.cream,
+  },
+
+  notificationBadgeText: {
+    color:
+      COLORS.white,
+
+    fontSize: 9,
+
+    fontWeight: "900",
+  },
   });
