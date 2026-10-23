@@ -1,136 +1,279 @@
 import React, {
   createContext,
-  useCallback,
   useContext,
   useEffect,
-  useMemo,
   useState,
 } from "react";
-import { API_CONFIG } from "../config/apiConfig";
-import { authApi } from "../services/authApi";
+
 import {
-  clearTokens,
-  getStoredTokens,
-  saveTokens,
-} from "../services/tokenStorage";
+  supabase,
+} from "../lib/supabase";
 
-const AuthContext = createContext(null);
+import {
+  getProfileRequest,
+  loginRequest,
+  logoutRequest,
+} from "../services/authApi";
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [session, setSession] = useState(null);
-  const [initializing, setInitializing] = useState(true);
 
-  const applyAuthResult = useCallback(async (result) => {
-    const nextSession = {
-      accessToken: result?.accessToken ?? null,
-      refreshToken: result?.refreshToken ?? null,
-    };
+const AuthContext =
+  createContext(null);
 
-    if (nextSession.accessToken || nextSession.refreshToken) {
-      await saveTokens(nextSession);
-      setSession(nextSession);
-    }
 
-    if (result?.user) setUser(result.user);
-    return result;
-  }, []);
+export function AuthProvider({
+  children,
+}) {
+  const [
+    session,
+    setSession,
+  ] = useState(null);
 
-  const restoreSession = useCallback(async () => {
-    try {
-      if (!API_CONFIG.baseURL) return;
+  const [
+    user,
+    setUser,
+  ] = useState(null);
 
-      const stored = await getStoredTokens();
-      if (stored.accessToken || stored.refreshToken) {
-        setSession(stored);
-      }
+  const [
+    perfil,
+    setPerfil,
+  ] = useState(null);
 
-      // /auth/me también permite restaurar una sesión basada en cookie en web.
-      if (stored.accessToken || typeof window !== "undefined") {
-        try {
-          const currentUser = await authApi.me();
-          if (currentUser) setUser(currentUser);
-        } catch {
-          if (stored.accessToken) {
-            await clearTokens();
-            setSession(null);
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+
+  /*
+   * Restaurar sesión cuando
+   * abre KaabMap.
+   */
+  useEffect(() => {
+    let mounted = true;
+
+
+    async function restoreSession() {
+      try {
+        const {
+          data,
+          error,
+        } =
+          await supabase.auth
+            .getSession();
+
+        if (error) {
+          throw error;
+        }
+
+        const currentSession =
+          data?.session ??
+          null;
+
+        if (!mounted) {
+          return;
+        }
+
+        setSession(
+          currentSession
+        );
+
+        setUser(
+          currentSession?.user ??
+          null
+        );
+
+        if (
+          currentSession?.user
+        ) {
+          try {
+            const profile =
+              await getProfileRequest(
+                currentSession
+                  .user.id
+              );
+
+            if (mounted) {
+              setPerfil(
+                profile
+              );
+            }
+          } catch (error) {
+            console.error(
+              "Error restaurando perfil:",
+              error
+            );
+
+            if (mounted) {
+              setPerfil(null);
+            }
           }
         }
+      } catch (error) {
+        console.error(
+          "Error restaurando sesión:",
+          error
+        );
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
-    } finally {
-      setInitializing(false);
     }
-  }, []);
 
-  useEffect(() => {
+
     restoreSession();
-  }, [restoreSession]);
 
-  const login = useCallback(
-    async (values) => applyAuthResult(await authApi.login(values)),
-    [applyAuthResult]
-  );
 
-  const register = useCallback(
-    async (values) => applyAuthResult(await authApi.register(values)),
-    [applyAuthResult]
-  );
+    /*
+     * Escuchar cambios en Auth.
+     */
+    const {
+      data: {
+        subscription,
+      },
+    } =
+      supabase.auth
+        .onAuthStateChange(
+          (
+            _event,
+            newSession
+          ) => {
+            if (!mounted) {
+              return;
+            }
 
-  const verify = useCallback(
-    async (values) => applyAuthResult(await authApi.verify(values)),
-    [applyAuthResult]
-  );
+            setSession(
+              newSession
+            );
 
-  const resendVerification = useCallback(
-    (values) => authApi.resendVerification(values),
-    []
-  );
+            setUser(
+              newSession
+                ?.user ??
+              null
+            );
 
-  const forgotPassword = useCallback(
-    (email) => authApi.forgotPassword(email),
-    []
-  );
+            if (!newSession) {
+              setPerfil(null);
+            }
+          }
+        );
 
-  const logout = useCallback(async () => {
-    await authApi.logout();
-    await clearTokens();
-    setUser(null);
-    setSession(null);
+
+    return () => {
+      mounted = false;
+
+      subscription
+        .unsubscribe();
+    };
   }, []);
 
-  const value = useMemo(
-    () => ({
-      user,
-      session,
-      initializing,
-      isAuthenticated: Boolean(user || session?.accessToken),
-      login,
-      register,
-      verify,
-      resendVerification,
-      forgotPassword,
-      logout,
-      restoreSession,
-    }),
-    [
-      user,
-      session,
-      initializing,
-      login,
-      register,
-      verify,
-      resendVerification,
-      forgotPassword,
-      logout,
-      restoreSession,
-    ]
-  );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  /*
+   * Login desde LoginScreen.
+   */
+  const login =
+    async (
+      email,
+      password
+    ) => {
+      const result =
+        await loginRequest({
+          email,
+          password,
+        });
+
+      setSession(
+        result.session
+      );
+
+      setUser(
+        result.user
+      );
+
+      setPerfil(
+        result.perfil
+      );
+
+      return result;
+    };
+
+
+  /*
+   * Cerrar sesión.
+   */
+  const logout =
+    async () => {
+      await logoutRequest();
+
+      setSession(null);
+      setUser(null);
+      setPerfil(null);
+    };
+
+
+  /*
+   * Recargar perfil manualmente.
+   */
+  const refreshProfile =
+    async () => {
+      if (!user?.id) {
+        return null;
+      }
+
+      const profile =
+        await getProfileRequest(
+          user.id
+        );
+
+      setPerfil(
+        profile
+      );
+
+      return profile;
+    };
+
+
+  const isAuthenticated =
+    Boolean(
+      session &&
+      user &&
+      perfil
+    );
+
+
+  return (
+    <AuthContext.Provider
+      value={{
+        session,
+        user,
+        perfil,
+
+        loading,
+
+        isAuthenticated,
+
+        login,
+        logout,
+        refreshProfile,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
+
 export function useAuth() {
-  const value = useContext(AuthContext);
-  if (!value) throw new Error("useAuth debe usarse dentro de AuthProvider");
-  return value;
+  const context =
+    useContext(
+      AuthContext
+    );
+
+  if (!context) {
+    throw new Error(
+      "useAuth debe utilizarse dentro de AuthProvider"
+    );
+  }
+
+  return context;
 }

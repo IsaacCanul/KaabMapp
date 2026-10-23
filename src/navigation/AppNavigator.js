@@ -1,5 +1,8 @@
 import React from "react";
 
+import * as Linking
+  from "expo-linking";
+
 import {
   NavigationContainer,
 } from "@react-navigation/native";
@@ -8,38 +11,82 @@ import {
   createNativeStackNavigator,
 } from "@react-navigation/native-stack";
 
-import WelcomeScreen from "../screens/auth/WelcomeScreen";
-import LoginScreen from "../screens/auth/LoginScreen";
-import RegisterScreen from "../screens/auth/RegisterScreen";
+import MainTabs
+  from "./MainTabs";
 
-const Stack = createNativeStackNavigator();
+import AuthStack
+  from "./AuthStack";
+
+import {
+  navigationRef,
+} from "./navigationRef";
+
+
+const Root =
+  createNativeStackNavigator();
+
+
+const linking = {
+  prefixes: [
+    Linking.createURL("/"),
+    "kaabmap://",
+  ],
+
+  config: {
+    screens: {
+      MainApp: "",
+
+      Auth: {
+        screens: {
+          Login:
+            "login",
+
+          Register:
+            "register",
+
+          EmailVerificationPending:
+            "email-verification-pending",
+
+          EmailVerified:
+            "email-confirmed",
+        },
+      },
+    },
+  },
+};
+
 
 export default function AppNavigator() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Welcome"
+    <NavigationContainer
+      ref={
+        navigationRef
+      }
+      linking={
+        linking
+      }
+    >
+      <Root.Navigator
+        initialRouteName="MainApp"
         screenOptions={{
-          headerShown: false,
+          headerShown:
+            false,
         }}
       >
-        <Stack.Screen
-          name="Welcome"
-          component={WelcomeScreen}
+        <Root.Screen
+          name="MainApp"
+          component={
+            MainTabs
+          }
         />
 
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
+        <Root.Screen
+          name="Auth"
+          component={
+            AuthStack
+          }
         />
-
-        <Stack.Screen
-          name="Registro"
-          component={RegisterScreen}
-        />
-          
-      
-      </Stack.Navigator>
+      </Root.Navigator>
     </NavigationContainer>
   );
 }

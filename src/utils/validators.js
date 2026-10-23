@@ -1,63 +1,33 @@
-export const validarEmail = (
-  email
-) => {
-  const emailLimpio = email.trim();
+export function validateEmail(
+  value
+) {
+  const email =
+    String(value ?? "")
+      .trim()
+      .toLowerCase();
 
-  if (emailLimpio === "") {
-    return "Debes escribir tu correo";
-  }
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    email
+  );
+}
 
-  if (!emailLimpio.includes("@")) {
-    return "El correo debe contener un @";
-  }
 
-  const partesEmail =
-    emailLimpio.split("@");
+export function validatePassword(
+  value
+) {
+  return (
+    typeof value ===
+      "string" &&
+    value.length >= 6
+  );
+}
 
-  if (partesEmail.length !== 2) {
-    return "El correo debe contener solo un @";
-  }
 
-  const userEmail =
-    partesEmail[0];
-
-  const domainEmail =
-    partesEmail[1];
-
-  if (
-    userEmail === "" ||
-    domainEmail === ""
-  ) {
-    return "Debes ingresar un correo válido";
-  }
-
-  if (!domainEmail.includes(".")) {
-    return "El dominio debe contener un punto";
-  }
-
-  if (
-    domainEmail.startsWith(".") ||
-    domainEmail.endsWith(".")
-  ) {
-    return "El dominio del correo no es válido";
-  }
-
-  return "";
-};
-
-export const validarPassword = (
-  password
-) => {
-  const passwordLimpio =
-    password.trim();
-
-  if (passwordLimpio === "") {
-    return "Debes escribir tu contraseña";
-  }
-
-  if (passwordLimpio.length < 6) {
-    return "Tu contraseña debe contener al menos 6 caracteres";
-  }
-
-  return "";
-};
+export function validateRequired(
+  value
+) {
+  return Boolean(
+    String(value ?? "")
+      .trim()
+  );
+}
