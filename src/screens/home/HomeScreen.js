@@ -50,24 +50,41 @@ export default function HomeScreen({
         return MELIPONARIOS;
       }
 
-      return MELIPONARIOS.filter(
-        (item) =>
-          item.nombre
-            ?.toLowerCase()
-            .includes(value) ||
-          item.municipio
-            ?.toLowerCase()
-            .includes(value) ||
-          item.localidad
-            ?.toLowerCase()
-            .includes(value) ||
-          item.especies?.some(
-            (especie) =>
-              especie
-                .toLowerCase()
-                .includes(value)
-          )
+      return MELIPONARIOS.filter((item) => {
+      const coincideNombre =
+        item.nombre
+          ?.toLowerCase()
+          .includes(value);
+
+      const coincideMunicipio =
+        item.municipio
+          ?.toLowerCase()
+          .includes(value);
+
+      const coincideLocalidad =
+        item.localidad
+          ?.toLowerCase()
+          .includes(value);
+
+      const coincideEspecie =
+        item.especies?.some((especie) => {
+          const nombre =
+            typeof especie === "string"
+              ? especie
+              : especie?.nombre ?? "";
+
+          return nombre
+            .toLowerCase()
+            .includes(value);
+        });
+
+      return (
+        coincideNombre ||
+        coincideMunicipio ||
+        coincideLocalidad ||
+        coincideEspecie
       );
+    });
     }, [search]);
 
   const abrirDetalle = (
