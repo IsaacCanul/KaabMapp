@@ -14,6 +14,10 @@ import {
   Ionicons,
 } from "@expo/vector-icons";
 
+import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
+
 import AppLogo
   from "../../components/AppLogo";
 
@@ -194,6 +198,10 @@ export default function LoginScreen({
 
 
   return (
+    <SafeAreaView
+      style={styles.safeArea}
+      edges={["top", "bottom"]}
+    >
     <ScrollView
       contentContainerStyle={
         styles.screen
@@ -334,6 +342,7 @@ export default function LoginScreen({
         </View>
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -350,6 +359,11 @@ const styles =
 
     container: {
       padding: 24,
+    },
+
+    safeArea: {
+      flex: 1,
+      backgroundColor: COLORS.cream,
     },
 
     title: {
