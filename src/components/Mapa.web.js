@@ -1,90 +1,210 @@
+
 import React, { useEffect } from "react";
 import { View } from "react-native";
 import L from "leaflet";
-import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import {
+  MapContainer,
+  Marker,
+  TileLayer,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
+
+// Fuente de mosaicos compartida con la app móvil.
+import { ATRIBUCION_HTML, TILE_URL } from "../config/mapTiles";
 import "leaflet/dist/leaflet.css";
-import { obtenerDatosOferta } from "../utils/meliponario";
+
+import {
+  MARKER_COLORS,
+  BEE_PIN_PATHS,
+  getMarkerCategory,
+  getMarkerCoordinates,
+} from "./kaabMarkerStyle";
 
 const CENTRO_YUCATAN = [20.85, -89.0];
+const CATEGORIAS = ["miel", "visitas", "ambos", "otro"];
 
-function crearIcono(item = {}) {
-  const oferta = obtenerDatosOferta(item);
-  return L.divIcon({
-    className: "kaabmap-marker",
-    html: `<div title="${oferta.label}" style="width:38px;height:38px;border-radius:50% 50% 50% 8px;transform:rotate(-45deg);background:${oferta.color};border:3px solid white;box-shadow:0 3px 8px #0005;display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);color:white;font:bold 15px Arial">●</span></div>`,
-    iconSize: [42, 42],
-    iconAnchor: [19, 38],
-  });
+function construirSvgPin(color) {
+  const p = BEE_PIN_PATHS;
+
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg"
+         width="48" height="60" viewBox="0 0 48 60"
+         aria-hidden="true"
+         style="display:block;overflow:visible;filter:drop-shadow(0px 3px 3px rgba(0,0,0,.32))">
+      <path d="${p.pin}" fill="${color}"
+            stroke="#fff" stroke-width="2.7" stroke-linejoin="round"/>
+      <g fill="none" stroke="#fff" stroke-width="2.3"
+         stroke-linecap="round" stroke-linejoin="round">
+        <path d="${p.leftWing}"/>
+        <path d="${p.rightWing}"/>
+        <path d="${p.body}"/>
+        <path d="${p.antennae}"/>
+        <path d="${p.stripes}"/>
+      </g>
+    </svg>
+  `;
 }
 
-const userIcon = L.divIcon({
-  className: "kaabmap-user-marker",
-  html: '<div style="width:20px;height:20px;border-radius:50%;background:#2878ED;border:4px solid white;box-shadow:0 2px 8px #0005"></div>',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
+// Reutilizar los iconos para evitar recrearlos en cada render.
+const ICONOS = Object.fromEntries(
+  CATEGORIAS.map((categoria) => [
+    categoria,
+    L.divIcon({
+      className: "kaabmap-bee-marker",
+      html: construirSvgPin(MARKER_COLORS[categoria]),
+      iconSize: [48, 60],
+      iconAnchor: [24, 56],
+      popupAnchor: [0, -49],
+    }),
+  ])
+);
+
+const ICONO_USUARIO = L.divIcon({
+  className: "kaabmap-ubicacion-usuario",
+  html: '<span style="display:block;width:17px;height:17px;background:#2878ED;border:3px solid white;border-radius:50%;box-shadow:0 1px 7px #0005;"></span>',
+  iconSize: [23, 23],
+  iconAnchor: [11, 11],
 });
 
-function Controller({ mode, selected, centerOn, onSelect }) {
+function ControlMapa({ mode, selected, centerOn, onSelect }) {
   const map = useMap();
 
   useMapEvents({
     click(event) {
       if (mode !== "registro") return;
-      onSelect?.({ latitude: event.latlng.lat, longitude: event.latlng.lng });
+
+      onSelect?.({
+        latitude: event.latlng.lat,
+        longitude: event.latlng.lng,
+      });
     },
   });
 
+  const punto = getMarkerCoordinates(centerOn) ??
+    (mode === "registro" ? getMarkerCoordinates(selected) : null);
+
   useEffect(() => {
-    const point = centerOn || (mode === "registro" ? selected : null);
-    if (!point) return;
-    const lat = Number(point.latitude);
-    const lng = Number(point.longitude);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-    map.flyTo([lat, lng], Number(point.zoom) || 13, { animate: true, duration: 0.6 });
-  }, [map, mode, selected?.latitude, selected?.longitude, centerOn?.latitude, centerOn?.longitude, centerOn?.zoom]);
+    if (!punto) return;
+
+    const zoom = Number(centerOn?.zoom) || 13;
+
+    map.flyTo(
+      [punto.latitude, punto.longitude],
+      zoom,
+      { animate: true, duration: 0.6 }
+    );
+  }, [map, punto?.latitude, punto?.longitude, centerOn?.zoom]);
 
   return null;
 }
 
 export default function KaabMapMap({
   mode = "explorar",
-  markers = [],
+  markers,
+  meliponarios,
   selected = null,
   centerOn = null,
   userLocation = null,
   onSelect,
   onMarkerPress,
+  onSelectMeliponario,
 }) {
-  const valid = markers.filter((item) => Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude)));
-  const initial = centerOn
-    ? [Number(centerOn.latitude), Number(centerOn.longitude)]
-    : selected
-      ? [Number(selected.latitude), Number(selected.longitude)]
-      : CENTRO_YUCATAN;
+  // Compatibilidad con pantallas antiguas y las nuevas.
+  const lista = Array.isArray(markers)
+    ? markers
+    : Array.isArray(meliponarios)
+      ? meliponarios
+      : [];
+
+  const validos = lista
+    .map((item) => ({
+      item,
+      coords: getMarkerCoordinates(item),
+    }))
+    .filter(({ coords }) => coords !== null);
+
+  const centro = getMarkerCoordinates(centerOn) ??
+    getMarkerCoordinates(selected);
+
+  const initialCenter = centro
+    ? [centro.latitude, centro.longitude]
+    : CENTRO_YUCATAN;
+
+  const seleccion = getMarkerCoordinates(selected);
+  const usuario = getMarkerCoordinates(userLocation);
 
   return (
-    <View style={{ flex: 1, minHeight: 300, width: "100%" }}>
-      <MapContainer center={initial} zoom={centerOn?.zoom || (selected ? 14 : 8)} maxZoom={19} style={{ height: "100%", width: "100%", minHeight: 300 }} scrollWheelZoom>
+    <View
+      style={{
+        flex: 1,
+        width: "100%",
+        minHeight: 300,
+      }}
+    >
+      <MapContainer
+        center={initialCenter}
+        zoom={Number(centerOn?.zoom) || (seleccion ? 14 : 8)}
+        maxZoom={19}
+        scrollWheelZoom
+        style={{
+          width: "100%",
+          height: "100%",
+          minHeight: 300,
+        }}
+      >
         <TileLayer
-          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          url={TILE_URL}
           maxZoom={19}
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution={ATRIBUCION_HTML}
         />
-        <Controller mode={mode} selected={selected} centerOn={centerOn} onSelect={onSelect} />
-        {mode === "explorar" && valid.map((item) => (
+
+        <ControlMapa
+          mode={mode}
+          selected={selected}
+          centerOn={centerOn}
+          onSelect={onSelect}
+        />
+
+        {mode !== "registro" &&
+          validos.map(({ item, coords }, index) => (
+            <Marker
+              key={String(
+                item.id ??
+                `${coords.latitude}-${coords.longitude}-${index}`
+              )}
+              position={[
+                coords.latitude,
+                coords.longitude,
+              ]}
+              icon={ICONOS[getMarkerCategory(item)]}
+              eventHandlers={{
+                click: () =>
+                  (onMarkerPress ?? onSelectMeliponario)?.(item),
+              }}
+            />
+          ))}
+
+        {mode === "registro" && seleccion && (
           <Marker
-            key={String(item.id)}
-            position={[Number(item.latitude), Number(item.longitude)]}
-            icon={crearIcono(item)}
-            eventHandlers={{ click: () => onMarkerPress?.(item) }}
+            position={[
+              seleccion.latitude,
+              seleccion.longitude,
+            ]}
+            icon={ICONOS.otro}
           />
-        ))}
-        {mode === "registro" && selected ? (
-          <Marker position={[Number(selected.latitude), Number(selected.longitude)]} icon={crearIcono({ tipoOferta: "neutro" })} />
-        ) : null}
-        {mode === "explorar" && userLocation ? (
-          <Marker position={[Number(userLocation.latitude), Number(userLocation.longitude)]} icon={userIcon} zIndexOffset={1000} />
-        ) : null}
+        )}
+
+        {mode !== "registro" && usuario && (
+          <Marker
+            position={[
+              usuario.latitude,
+              usuario.longitude,
+            ]}
+            icon={ICONO_USUARIO}
+            zIndexOffset={1000}
+          />
+        )}
       </MapContainer>
     </View>
   );
