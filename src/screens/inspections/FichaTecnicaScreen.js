@@ -120,8 +120,9 @@ function Pregunta({ numero, pregunta, valor, onChange }) {
 ========================================= */
 
 export default function FichaTecnicaScreen({ navigation, route }) {
-  const meliponario = route.params?.meliponario ?? {};
-  const meliponarioId = meliponario.meliponario_id;
+  // Visita asignada por el coordinador de campo (mis_visitas_tecnicas_asignadas).
+  const meliponario = route.params?.visita ?? {};
+  const asignacionId = meliponario.asignacion_id;
 
   const [respuestas, setRespuestas] = useState({});
   const [observaciones, setObservaciones] = useState("");
@@ -136,7 +137,7 @@ export default function FichaTecnicaScreen({ navigation, route }) {
     let activo = true;
 
     (async () => {
-      const borrador = await leerBorradorFicha(meliponarioId);
+      const borrador = await leerBorradorFicha(asignacionId);
 
       if (borrador) {
         if (!activo) return;
@@ -145,7 +146,7 @@ export default function FichaTecnicaScreen({ navigation, route }) {
         setOrigen("Continúas el borrador guardado en este teléfono.");
       } else if (meliponario.ficha_id) {
         try {
-          const ficha = await obtenerFichaTecnicaRequest(meliponarioId);
+          const ficha = await obtenerFichaTecnicaRequest(asignacionId);
           if (!activo || !ficha) return;
           setRespuestas(ficha.respuestas);
           setObservaciones(ficha.observaciones);
@@ -167,13 +168,13 @@ export default function FichaTecnicaScreen({ navigation, route }) {
     return () => {
       activo = false;
     };
-  }, [meliponarioId, meliponario.ficha_id]);
+  }, [asignacionId, meliponario.ficha_id]);
 
   // Guarda el avance en el teléfono mientras se captura.
   useEffect(() => {
     if (!listo.current) return;
-    guardarBorradorFicha(meliponarioId, { respuestas, observaciones });
-  }, [respuestas, observaciones, meliponarioId]);
+    guardarBorradorFicha(asignacionId, { respuestas, observaciones });
+  }, [respuestas, observaciones, asignacionId]);
 
   const visibles = preguntasVisibles(respuestas);
   const contestadas = visibles.filter(
@@ -192,7 +193,7 @@ export default function FichaTecnicaScreen({ navigation, route }) {
     setError("");
 
     try {
-      await guardarFichaTecnicaRequest(meliponarioId, respuestas, observaciones);
+      await guardarFichaTecnicaRequest(asignacionId, respuestas, observaciones);
       aviso("Ficha técnica enviada", "La inspección quedó registrada.");
       navigation.goBack();
     } catch (e) {
@@ -215,7 +216,7 @@ export default function FichaTecnicaScreen({ navigation, route }) {
         >
           <Ionicons name="arrow-back" size={22} color={COLORS.green} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>FICHA TÉCNICA</Text>
+        <Text style={styles.topTitle}>ENCUESTA · FICHA TÉCNICA</Text>
       </View>
 
       {cargando ? (
