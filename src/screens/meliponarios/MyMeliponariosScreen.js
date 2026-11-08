@@ -4,6 +4,8 @@ import React, {
   useState,
 } from "react";
 
+import { MAX_FOTOS } from "../../config/fotos";
+
 import {
   ActivityIndicator,
   Alert,
@@ -41,6 +43,10 @@ import {
 import {
   configurarPublicacionRequest,
 } from "../../services/backend/formularioApi";
+
+import {
+  abrirAprobadoComoClienteRequest,
+} from "../../services/edicionAprobadosApi";
 
 import {
   getMeliponarioPhotos,
@@ -521,7 +527,7 @@ export default function MyMeliponariosScreen({
           ),
         })),
 
-        imagenes: imagenes.slice(0, 3),
+        imagenes: imagenes.slice(0, MAX_FOTOS),
       };
 
       if (
@@ -591,6 +597,45 @@ export default function MyMeliponariosScreen({
         "No se pudo enviar",
         err?.message ??
           "Error al enviar a revisión."
+      );
+    } finally {
+      setOcupado(null);
+    }
+  };
+
+  /* ===================================
+     EDITAR UN MELIPONARIO APROBADO
+     Abre el mismo formulario del registro; al guardar, el
+     cambio se aplica directo (sin nueva revisión).
+  =================================== */
+
+  const editarAprobado = async (item) => {
+    if (ocupado !== null) return;
+
+    setOcupado(item.id);
+
+    try {
+      const draft = await abrirAprobadoComoClienteRequest(item.id);
+
+      if (draft.latitude == null || draft.longitude == null) {
+        throw new Error(
+          "No se recuperaron las coordenadas del meliponario. " +
+          "Para no sobrescribir la ubicación, no se abrirá la edición."
+        );
+      }
+
+      if (typeof replaceDraft === "function") {
+        replaceDraft(draft);
+      } else {
+        resetDraft();
+        updateDraft(draft);
+      }
+
+      navigation.navigate("RegisterStep1");
+    } catch (err) {
+      mostrarAviso(
+        "No se pudo abrir la edición",
+        err?.message ?? "Error inesperado."
       );
     } finally {
       setOcupado(null);
@@ -866,6 +911,15 @@ export default function MyMeliponariosScreen({
                       disabled={ocupado !== null}
                     />
                   </>
+                )}
+
+                {estadoSolicitud(item) === "aprobada" && (
+                  <Action
+                    title="Editar meliponario"
+                    icon="create-outline"
+                    onPress={() => editarAprobado(item)}
+                    disabled={ocupado !== null}
+                  />
                 )}
 
                 {estadoSolicitud(item) === "aprobada" &&

@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../lib/supabase";
 import { getMisMeliponariosRequest } from "./meliponariosApi";
 import { getBandejaSolicitudesTerritorialesRequest } from "./territorialApi";
-import { getMisInspeccionesPorRealizarRequest } from "./fichaTecnicaApi";
+import { getMisVisitasAsignadasRequest } from "./fichaTecnicaApi";
 
 
 /* =====================================================
@@ -127,9 +127,18 @@ function notificacionesDeRegistros(registros) {
 
 /* PARA EL TRABAJADOR DE CAMPO */
 
-function notificacionesDeTrabajador(bandeja, inspecciones, userId) {
+function notificacionesDeTrabajador(bandeja, visitas, userId) {
   const lista = [];
-  const destino = { tab: "Mis inspecciones", screen: "InspectionsMain" };
+  const destino = {
+    tab: "Mis inspecciones",
+    screen: "InspectionsMain",
+    params: { apartado: "bandeja" },
+  };
+  const destinoVisitas = {
+    tab: "Mis inspecciones",
+    screen: "InspectionsMain",
+    params: { apartado: "visitas" },
+  };
 
   for (const s of bandeja) {
     const mia = String(s.trabajador_revisor_id ?? "") === String(userId);
@@ -155,16 +164,17 @@ function notificacionesDeTrabajador(bandeja, inspecciones, userId) {
     }
   }
 
-  for (const i of inspecciones) {
-    if (i.ficha_id) continue;
+  // Visitas que el coordinador de campo asignó y aún no tienen encuesta.
+  for (const v of visitas) {
+    if (v.ficha_id) continue;
 
     lista.push({
-      id: `inspeccion:${i.meliponario_id}`,
+      id: `visita:${v.asignacion_id}`,
       tipo: "inspeccion",
-      titulo: "Inspección pendiente",
-      mensaje: `Visita «${nombre(i)}» y llena su ficha técnica.`,
-      fecha: i.fecha_aprobacion,
-      destino,
+      titulo: "Nueva visita asignada",
+      mensaje: `El coordinador te asignó «${nombre(v)}» (${v.localidad_nombre || "sin localidad"}). Visítalo e inicia la encuesta.`,
+      fecha: v.fecha_asignacion,
+      destino: destinoVisitas,
     });
   }
 
@@ -205,14 +215,14 @@ export async function getNotificacionesRequest() {
   let lista;
 
   if ((await rolActual(user.id)) === FIELD_WORKER_ROLE_ID) {
-    const [bandeja, inspecciones] = await Promise.allSettled([
+    const [bandeja, visitas] = await Promise.allSettled([
       getBandejaSolicitudesTerritorialesRequest(),
-      getMisInspeccionesPorRealizarRequest(),
+      getMisVisitasAsignadasRequest(),
     ]);
 
     lista = notificacionesDeTrabajador(
       bandeja.status === "fulfilled" && Array.isArray(bandeja.value) ? bandeja.value : [],
-      inspecciones.status === "fulfilled" ? inspecciones.value : [],
+      visitas.status === "fulfilled" ? visitas.value.visitas : [],
       user.id
     );
   } else {
