@@ -130,15 +130,102 @@ export const styles = StyleSheet.create({
     color: COLORS.white,
   },
 
+  photoCounter: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: COLORS.warningText,
+    marginTop: -4,
+  },
+
+  photoCounterOk: {
+    color: COLORS.successText,
+  },
+
+  // Lista de fotos: miniatura + descripción opcional.
+  photoList: {
+    gap: 10,
+    marginBottom: 10,
+  },
+
+  photoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 10,
+    borderRadius: 18,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  photoThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    backgroundColor: COLORS.grayLight,
+  },
+
+  photoInfo: {
+    flex: 1,
+    gap: 6,
+  },
+
+  photoLabel: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: COLORS.primaryDark,
+  },
+
+  photoSaved: {
+    fontSize: 13,
+    color: COLORS.gray,
+  },
+
+  photoInput: {
+    minHeight: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 10,
+    fontSize: 14,
+    color: COLORS.text,
+    backgroundColor: COLORS.cream,
+  },
+
+  photoRemove: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.errorSoft,
+  },
+
+  uploadRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    minHeight: 64,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderColor: "#AFC7B2",
+    backgroundColor: "#F5F3EC",
+  },
+
+  // 3 fotos por fila (5 caben en 2 filas).
   imagesGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
     marginBottom: 10,
   },
 
   uploadCard: {
-    flex: 1,
-    minHeight: 118,
+    width: "31%",
+    flexGrow: 0,
+    minHeight: 110,
     borderRadius: 20,
     borderWidth: 1.5,
     borderStyle: "dashed",
@@ -165,8 +252,9 @@ export const styles = StyleSheet.create({
   },
 
   imageCard: {
-    flex: 1,
-    minHeight: 118,
+    width: "31%",
+    flexGrow: 0,
+    height: 110,
     borderRadius: 20,
     overflow: "hidden",
     position: "relative",

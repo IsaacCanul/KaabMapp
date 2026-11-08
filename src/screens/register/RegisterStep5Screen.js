@@ -27,6 +27,15 @@ import {
   guardarBorradorRemoto,
 } from "../../services/guardarBorradorRemoto";
 
+import {
+  MAX_FOTOS,
+  MIN_FOTOS,
+} from "../../config/fotos";
+
+import {
+  guardarEdicionAprobadoRequest,
+} from "../../services/edicionAprobadosApi";
+
 
 const C = {
   dark: "#06492E",
@@ -108,6 +117,10 @@ export default function RegisterStep5Screen({
     draft.latitude != null &&
     draft.longitude != null;
 
+  // Edición de un meliponario ya aprobado: se guarda directo.
+  const editandoAprobado =
+    draft.modoEdicion === "aprobado";
+
 
   /* =========================================
      GUARDAR BORRADOR Y FOTOGRAFÍAS
@@ -118,7 +131,15 @@ export default function RegisterStep5Screen({
       return;
     }
 
-    if (!draft.autorizacionPublicacion) {
+    if (fotos.length < MIN_FOTOS) {
+      setError(
+        `Agrega al menos ${MIN_FOTOS} fotografías en el paso 1 ` +
+        `(llevas ${fotos.length}).`
+      );
+      return;
+    }
+
+    if (!editandoAprobado && !draft.autorizacionPublicacion) {
       setError(
         "Para publicar tu meliponario debes autorizar que se muestren " +
         "su ubicación exacta y tu teléfono de contacto."
@@ -135,6 +156,28 @@ export default function RegisterStep5Screen({
         ...draft,
         nombre: nombreFinal,
       };
+
+      if (editandoAprobado) {
+        await guardarEdicionAprobadoRequest(formulario, {
+          onPhotosProgress: (imagenes) => {
+            updateDraft({ imagenes });
+            setUploadedCount(
+              imagenes.filter((foto) => Boolean(foto?.remoteId)).length
+            );
+          },
+        });
+
+        const destino = draft.volverA || "MyMeliponarios";
+
+        aviso(
+          "Cambios guardados",
+          "Los cambios del meliponario se aplicaron."
+        );
+
+        resetDraft();
+        navigation.navigate(destino);
+        return;
+      }
 
       await guardarBorradorRemoto(
         formulario,
@@ -195,13 +238,15 @@ export default function RegisterStep5Screen({
     <RegisterLayout
       navigation={navigation}
       step={4}
-      title="Registrar meliponario"
-      subtitle="Confirmar borrador"
+      title={editandoAprobado ? "Editar meliponario" : "Registrar meliponario"}
+      subtitle={editandoAprobado ? "Confirmar cambios" : "Confirmar borrador"}
     >
       <Text style={styles.intro}>
-        Revisa tus datos. Puedes guardarlos
-        como borrador y modificarlos antes
-        de enviarlos a revisión.
+        {editandoAprobado
+          ? "Revisa los cambios. Como el meliponario ya está aprobado, " +
+            "se aplicarán de inmediato."
+          : "Revisa tus datos. Puedes guardarlos como borrador y " +
+            "modificarlos antes de enviarlos a revisión."}
       </Text>
 
       {/* INFORMACIÓN GENERAL */}
@@ -241,7 +286,7 @@ export default function RegisterStep5Screen({
 
         <Dato
           label="Fotografías"
-          value={`${fotos.length} de 3`}
+          value={`${fotos.length} de ${MAX_FOTOS}`}
         />
       </View>
 
@@ -346,8 +391,9 @@ export default function RegisterStep5Screen({
         </Text>
       </View>
 
-      {/* AUTORIZACIÓN DE PUBLICACIÓN */}
+      {/* AUTORIZACIÓN DE PUBLICACIÓN (no aplica al editar un aprobado) */}
 
+      {!editandoAprobado && (
       <TouchableOpacity
         style={[
           styles.consent,
@@ -391,6 +437,7 @@ export default function RegisterStep5Screen({
           </Text>
         </View>
       </TouchableOpacity>
+      )}
 
       {loading && fotos.length > 0 && (
         <Text style={styles.progressText}>
@@ -442,15 +489,19 @@ export default function RegisterStep5Screen({
         <Text style={styles.buttonText}>
           {loading
             ? "Guardando en Supabase..."
-            : "Guardar borrador"}
+            : editandoAprobado
+              ? "Guardar cambios"
+              : "Guardar borrador"}
         </Text>
       </TouchableOpacity>
 
-      <Text style={styles.note}>
-        Después podrás seleccionar
-        «Enviar a revisión» desde
-        Mis registros.
-      </Text>
+      {!editandoAprobado && (
+        <Text style={styles.note}>
+          Después podrás seleccionar
+          «Enviar a revisión» desde
+          Mis registros.
+        </Text>
+      )}
     </RegisterLayout>
   );
 }

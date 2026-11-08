@@ -36,6 +36,12 @@ const initialDraft = () => ({
   autorizacionUbicacionExacta: false,
   ofreceVentaMiel: false,
   ofreceVisitas: false,
+
+  // null = registro o borrador; "aprobado" = edición de un meliponario
+  // aprobado (se guarda directo, sin enviar a revisión).
+  modoEdicion: null,
+  // Pantalla a la que se regresa al terminar.
+  volverA: null,
 });
 
 export function MeliponarioDraftProvider({

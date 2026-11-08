@@ -689,7 +689,7 @@ export default function RegisterStep3Screen({
         navigation
       }
       step={3}
-      title="Registrar meliponario"
+      title={draft?.modoEdicion === "aprobado" ? "Editar meliponario" : "Registrar meliponario"}
       subtitle="Especies y colmenas"
     >
 
