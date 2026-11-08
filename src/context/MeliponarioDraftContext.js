@@ -5,101 +5,84 @@ import React, {
   useState,
 } from "react";
 
-const initialDraft = {
-  // PASO 1 - Información general
-  nombre: "",
-  responsable: "",
-  descripcion: "",
+const Context = createContext(null);
 
-  // PASO 2 - Ubicación
+const initialDraft = () => ({
+  meliponarioId: null,
+  localJobId: null,
+
+  nombre: "",
+  descripcion: "",
+  responsableNombre: "",
+  imagenes: [],
+
+  municipioId: null,
   municipio: "",
+  localidadId: null,
   localidad: "",
 
   latitude: null,
   longitude: null,
+  locationAccuracy: null,
+  locationSource: null,
 
-  temperatura: "25–28 °C",
-
-  // PASO 3 - Especies
   especies: [],
 
-  // PASO 4 - Servicios / venta
-  tipoOferta: "",
+  referenciaUbicacion: "",
+  observacionesCliente: "",
 
-  vendeMiel: false,
-
-  visitable: false,
-
-  vendeProductosColmena: false,
-
-  categoriasProducto: [],
-
-  // Punto de venta
-  puntoVentaEnMeliponario: true,
-
-  puntoVentaNombre: "",
-
-  puntoVentaDireccion: "",
-
-  puntoVenta: null,
-};
-
-const MeliponarioDraftContext =
-  createContext(null);
+  // Consentimiento para publicar ubicación exacta y teléfono.
+  autorizacionPublicacion: false,
+  autorizacionUbicacionExacta: false,
+  ofreceVentaMiel: false,
+  ofreceVisitas: false,
+});
 
 export function MeliponarioDraftProvider({
   children,
 }) {
-  const [draft, setDraft] =
-    useState(initialDraft);
-
-  // Actualiza solamente las propiedades
-  // que recibe.
-  const updateDraft = (partial) => {
-    setDraft((prev) => ({
-      ...prev,
-      ...partial,
-    }));
-  };
-
-  // Limpia todo el formulario.
-  const resetDraft = () => {
-    setDraft({
-      ...initialDraft,
-
-      especies: [],
-
-      categoriasProducto: [],
-    });
-  };
+  const [draft, setDraft] = useState(initialDraft);
 
   const value = useMemo(
     () => ({
       draft,
-      updateDraft,
-      resetDraft,
+
+      updateDraft: (patch) => {
+        setDraft((old) => ({
+          ...old,
+          ...patch,
+        }));
+      },
+
+      replaceDraft: (data) => {
+        setDraft({
+          ...initialDraft(),
+          ...data,
+        });
+      },
+
+      resetDraft: () => {
+        setDraft(initialDraft());
+      },
     }),
     [draft]
   );
 
   return (
-    <MeliponarioDraftContext.Provider
-      value={value}
-    >
+    <Context.Provider value={value}>
       {children}
-    </MeliponarioDraftContext.Provider>
+    </Context.Provider>
   );
 }
 
 export function useMeliponarioDraft() {
-  const context =
-    useContext(MeliponarioDraftContext);
+  const ctx = useContext(Context);
 
-  if (!context) {
+  if (!ctx) {
     throw new Error(
-      "useMeliponarioDraft debe usarse dentro de MeliponarioDraftProvider"
+      "useMeliponarioDraft debe usarse dentro de MeliponarioDraftProvider."
     );
   }
 
-  return context;
+  return ctx;
 }

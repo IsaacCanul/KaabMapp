@@ -1,6 +1,11 @@
-import React from "react";
+import React, {
+  useCallback,
+  useState,
+} from "react";
 
 import {
+  ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +18,10 @@ import {
 } from "react-native-safe-area-context";
 
 import {
+  useFocusEffect,
+} from "@react-navigation/native";
+
+import {
   Ionicons,
 } from "@expo/vector-icons";
 
@@ -20,76 +29,41 @@ import {
   COLORS,
 } from "../../theme/colors";
 
-const NOTIFICATIONS = [
-  {
-    id: "1",
-
-    type: "approved",
-
-    title:
-      "Registro aprobado",
-
-    message:
-      "Tu registro de Meliponario Izamal fue aprobado.",
-
-    time:
-      "Hace 10 min",
-
-    read:
-      false,
-  },
-
-  {
-    id: "2",
-
-    type: "review",
-
-    title:
-      "Registro en revisión",
-
-    message:
-      "Tu solicitud está siendo revisada por el equipo de KaabMap.",
-
-    time:
-      "Hace 2 h",
-
-    read:
-      false,
-  },
-
-  {
-    id: "3",
-
-    type: "info",
-
-    title:
-      "Registro enviado",
-
-    message:
-      "Recibimos correctamente la información de tu meliponario.",
-
-    time:
-      "Ayer",
-
-    read:
-      true,
-  },
-];
+import {
+  getNotificacionesRequest,
+  marcarLeidasRequest,
+  tiempoRelativo,
+} from "../../services/notificacionesApi";
 
 
-function getIcon(type) {
-  switch (type) {
-    case "approved":
+function getIcon(tipo) {
+  switch (tipo) {
+    case "aprobada":
       return "checkmark-circle-outline";
 
-    case "review":
+    case "publico":
+      return "globe-outline";
+
+    case "enviada":
+      return "paper-plane-outline";
+
+    case "revision":
       return "time-outline";
 
-    case "correction":
+    case "correccion":
       return "create-outline";
 
-    case "rejected":
+    case "rechazada":
       return "close-circle-outline";
+
+    case "borrador":
+      return "document-text-outline";
+
+    case "nueva":
+      return "mail-unread-outline";
+
+    case "inspeccion":
+      return "clipboard-outline";
 
     default:
       return "notifications-outline";
@@ -100,185 +74,185 @@ function getIcon(type) {
 export default function NotificationsScreen({
   navigation,
 }) {
+  const [lista, setLista] = useState([]);
+  const [autenticado, setAutenticado] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+  const [revision, setRevision] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      let activo = true;
+
+      (async () => {
+        setError("");
+
+        try {
+          const data = await getNotificacionesRequest();
+          if (!activo) return;
+          setAutenticado(data.autenticado);
+          setLista(data.notificaciones);
+        } catch (e) {
+          if (activo) {
+            setError(e?.message ?? "No se pudieron cargar las notificaciones.");
+          }
+        } finally {
+          if (activo) {
+            setLoading(false);
+            setRefreshing(false);
+          }
+        }
+      })();
+
+      return () => {
+        activo = false;
+      };
+    }, [revision])
+  );
+
+  const actualizar = () => {
+    setRefreshing(true);
+    setRevision((n) => n + 1);
+  };
+
+  const noLeidas = lista.filter((n) => !n.leida);
+
+  const marcarTodas = async () => {
+    await marcarLeidasRequest(noLeidas.map((n) => n.id));
+    setLista((l) => l.map((n) => ({ ...n, leida: true })));
+  };
+
+  const abrir = async (n) => {
+    if (!n.leida) {
+      await marcarLeidasRequest([n.id]);
+      setLista((l) => l.map((x) => (x.id === n.id ? { ...x, leida: true } : x)));
+    }
+
+    if (n.destino?.tab) {
+      // La pestaña destino vive en el navegador de pestañas (padre).
+      const tabs = navigation.getParent?.() ?? navigation;
+      tabs.navigate(n.destino.tab, { screen: n.destino.screen, params: n.destino.params });
+    }
+  };
+
   return (
     <SafeAreaView
       style={styles.screen}
-      edges={[
-        "top",
-        "left",
-        "right",
-      ]}
+      edges={["top", "left", "right"]}
     >
-      <View
-        style={styles.header}
-      >
+      <View style={styles.header}>
         <TouchableOpacity
-          style={
-            styles.backButton
-          }
-          onPress={() =>
-            navigation.goBack()
-          }
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+          accessibilityLabel="Volver"
         >
           <Ionicons
             name="chevron-back"
             size={24}
-            color={
-              COLORS.primaryDark ??
-              COLORS.primary
-            }
+            color={COLORS.primaryDark ?? COLORS.primary}
           />
         </TouchableOpacity>
 
-        <Text
-          style={
-            styles.headerTitle
-          }
-        >
+        <Text style={styles.headerTitle}>
           Notificaciones
         </Text>
 
-        <View
-          style={{
-            width: 44,
-          }}
-        />
+        <View style={{ width: 44 }} />
       </View>
 
-
       <ScrollView
-        showsVerticalScrollIndicator={
-          false
-        }
-        contentContainerStyle={
-          styles.content
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={actualizar}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
         }
       >
-        {NOTIFICATIONS.length >
-        0 ? (
-          NOTIFICATIONS.map(
-            (notification) => (
-              <TouchableOpacity
-                key={
-                  notification.id
-                }
-                activeOpacity={0.8}
-                style={[
-                  styles.notification,
-
-                  !notification.read &&
-                    styles.unreadNotification,
-                ]}
-              >
-                <View
-                  style={
-                    styles.iconContainer
-                  }
-                >
-                  <Ionicons
-                    name={getIcon(
-                      notification.type
-                    )}
-                    size={24}
-                    color={
-                      COLORS.primary
-                    }
-                  />
-                </View>
-
-
-                <View
-                  style={
-                    styles.notificationContent
-                  }
-                >
-                  <View
-                    style={
-                      styles.titleRow
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.notificationTitle
-                      }
-                    >
-                      {
-                        notification.title
-                      }
-                    </Text>
-
-                    {!notification.read && (
-                      <View
-                        style={
-                          styles.unreadDot
-                        }
-                      />
-                    )}
-                  </View>
-
-
-                  <Text
-                    style={
-                      styles.notificationMessage
-                    }
-                  >
-                    {
-                      notification.message
-                    }
-                  </Text>
-
-
-                  <Text
-                    style={
-                      styles.notificationTime
-                    }
-                  >
-                    {
-                      notification.time
-                    }
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            )
-          )
-        ) : (
-          <View
-            style={
-              styles.empty
-            }
-          >
-            <View
-              style={
-                styles.emptyIcon
-              }
-            >
-              <Ionicons
-                name="notifications-outline"
-                size={42}
-                color={
-                  COLORS.primary
-                }
-              />
-            </View>
-
-            <Text
-              style={
-                styles.emptyTitle
-              }
-            >
-              Sin notificaciones
+        {noLeidas.length > 0 && (
+          <View style={styles.toolbar}>
+            <Text style={styles.toolbarText}>
+              {noLeidas.length} sin leer
             </Text>
 
-            <Text
-              style={
-                styles.emptyText
-              }
-            >
-              Aquí aparecerán las
-              novedades relacionadas
-              con tus registros.
-            </Text>
+            <TouchableOpacity onPress={marcarTodas}>
+              <Text style={styles.toolbarAction}>
+                Marcar todas como leídas
+              </Text>
+            </TouchableOpacity>
           </View>
+        )}
+
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color={COLORS.primary}
+            style={{ marginTop: 40 }}
+          />
+        ) : !autenticado ? (
+          <Vacio
+            icono="person-circle-outline"
+            titulo="Inicia sesión"
+            texto="Las notificaciones son sobre tus registros. Inicia sesión desde Cuenta para verlas."
+          />
+        ) : error ? (
+          <Vacio
+            icono="alert-circle-outline"
+            titulo="No se pudieron cargar"
+            texto={error}
+          />
+        ) : lista.length === 0 ? (
+          <Vacio
+            icono="notifications-outline"
+            titulo="Sin notificaciones"
+            texto="Aquí aparecerán las novedades relacionadas con tus registros."
+          />
+        ) : (
+          lista.map((n) => (
+            <TouchableOpacity
+              key={n.id}
+              activeOpacity={0.8}
+              onPress={() => abrir(n)}
+              style={[
+                styles.notification,
+                !n.leida && styles.unreadNotification,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={`${n.leida ? "" : "No leída. "}${n.titulo}. ${n.mensaje}`}
+            >
+              <View style={styles.iconContainer}>
+                <Ionicons
+                  name={getIcon(n.tipo)}
+                  size={24}
+                  color={COLORS.primary}
+                />
+              </View>
+
+              <View style={styles.notificationContent}>
+                <View style={styles.titleRow}>
+                  <Text style={styles.notificationTitle}>
+                    {n.titulo}
+                  </Text>
+
+                  {!n.leida && <View style={styles.unreadDot} />}
+                </View>
+
+                <Text style={styles.notificationMessage}>
+                  {n.mensaje}
+                </Text>
+
+                {!!tiempoRelativo(n.fecha) && (
+                  <Text style={styles.notificationTime}>
+                    {tiempoRelativo(n.fecha)}
+                  </Text>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))
         )}
       </ScrollView>
     </SafeAreaView>
@@ -286,8 +260,51 @@ export default function NotificationsScreen({
 }
 
 
+function Vacio({ icono, titulo, texto }) {
+  return (
+    <View style={styles.empty}>
+      <View style={styles.emptyIcon}>
+        <Ionicons
+          name={icono}
+          size={42}
+          color={COLORS.primary}
+        />
+      </View>
+
+      <Text style={styles.emptyTitle}>
+        {titulo}
+      </Text>
+
+      <Text style={styles.emptyText}>
+        {texto}
+      </Text>
+    </View>
+  );
+}
+
+
 const styles =
   StyleSheet.create({
+    toolbar: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 12,
+    },
+
+    toolbarText: {
+      fontSize: 13,
+      fontWeight: "800",
+      color: COLORS.primaryDark ?? COLORS.primary,
+    },
+
+    toolbarAction: {
+      fontSize: 13,
+      fontWeight: "800",
+      color: COLORS.primary,
+      textDecorationLine: "underline",
+    },
+
     screen: {
       flex: 1,
 
