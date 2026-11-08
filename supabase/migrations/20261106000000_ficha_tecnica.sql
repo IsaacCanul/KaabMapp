@@ -1,15 +1,23 @@
 -- =====================================================================
--- FICHA TÉCNICA DE INSPECCIÓN PRESENCIAL
+-- FICHA TÉCNICA DE INSPECCIÓN PRESENCIAL  (PROPUESTA PARA EL EQUIPO DE BACKEND)
 --
--- Después de aprobar una solicitud, el trabajador de campo (rol 4) visita
--- el meliponario y captura la ficha técnica desde la app.
+-- Flujo:
+--   1. El trabajador de campo (rol 4) aprueba solicitudes básicas de su zona
+--      (bandeja_solicitudes_territoriales / resolver_solicitud_territorial).
+--   2. El coordinador de campo (rol 3) asigna el meliponario aprobado a un
+--      trabajador (coord_asignar_visita_tecnica → asignaciones_visita_tecnica).
+--   3. El trabajador ve sus visitas asignadas (mis_visitas_tecnicas_asignadas),
+--      elige una y captura esta ficha técnica en la visita presencial.
+--
+-- Delimitación territorial: la ficha solo se puede capturar si la visita
+-- está asignada al trabajador, sigue vigente y el meliponario está en una
+-- zona activa que el administrador general asignó a ese trabajador.
 --
 -- Cada opción marcada se guarda como un renglón (pregunta + opción) para
--- poder sacar porcentajes por pregunta. Cuando se elige «otro», la
--- respuesta escrita queda en texto_otro: en la estadística cuenta como
--- «otro» y además se puede listar aparte para analizarla.
+-- sacar porcentajes por pregunta. «Otro» cuenta como «otro» en la
+-- estadística y su texto se lista aparte para analizarlo.
 --
--- Ejecutar una sola vez en Supabase → SQL Editor.
+-- No se ejecuta desde la app: lo revisa y aplica el equipo de backend.
 -- =====================================================================
 
 
@@ -82,18 +90,19 @@ on conflict (pregunta, opcion) do update
 
 
 -- ---------------------------------------------------------------------
--- 2. FICHAS Y RESPUESTAS
+-- 2. FICHAS Y RESPUESTAS (una ficha por visita asignada)
 -- ---------------------------------------------------------------------
 
 create table if not exists public.fichas_tecnicas (
-  id               uuid primary key default gen_random_uuid(),
-  meliponario_id   uuid not null references public.meliponarios(id) on delete cascade,
-  trabajador_id    uuid not null references auth.users(id),
-  observaciones    text check (observaciones is null or char_length(observaciones) <= 2000),
-  fecha_inspeccion timestamptz not null default now(),
-  fecha_creacion   timestamptz not null default now(),
-  fecha_actualizacion timestamptz not null default now(),
-  unique (meliponario_id)
+  id                  uuid primary key default gen_random_uuid(),
+  asignacion_id       uuid not null unique
+                        references public.asignaciones_visita_tecnica(id) on delete cascade,
+  meliponario_id      uuid not null references public.meliponarios(id) on delete cascade,
+  trabajador_id       uuid not null references public.perfiles(id),
+  observaciones       text check (observaciones is null or char_length(observaciones) <= 2000),
+  fecha_inspeccion    timestamptz not null default now(),
+  fecha_creacion      timestamptz not null default now(),
+  fecha_actualizacion timestamptz not null default now()
 );
 
 create table if not exists public.fichas_tecnicas_respuestas (
@@ -120,56 +129,67 @@ create policy "catalogo visible para usuarios"
 
 
 -- ---------------------------------------------------------------------
--- 3. INSPECCIONES PENDIENTES DEL TRABAJADOR
---    Meliponarios cuya última solicitud aprobó el trabajador actual.
+-- 3. VALIDACIÓN: visita asignada al trabajador y dentro de su zona
+--    Regresa el meliponario de la visita, o NULL si no está autorizada.
 -- ---------------------------------------------------------------------
 
-create or replace function public.mis_inspecciones_por_realizar()
+create or replace function private.ficha_visita_autorizada(p_asignacion_id uuid)
+returns uuid
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select a.meliponario_id
+  from asignaciones_visita_tecnica a
+  join meliponarios m on m.id = a.meliponario_id
+  join perfiles p     on p.id = a.trabajador_id
+  where a.id = p_asignacion_id
+    and a.trabajador_id = auth.uid()
+    and a.estado = 'asignada'
+    and p.rol_id = 4
+    and p.activo
+    and exists (
+      select 1
+      from asignaciones_zona az
+      join zonas z              on z.id = az.zona_id and z.activo
+      join zonas_localidades zl on zl.zona_id = az.zona_id
+      where az.usuario_id = auth.uid()
+        and zl.localidad_id = m.localidad_id
+        and az.fecha_inicio <= now()
+        and (az.fecha_fin is null or az.fecha_fin > now())
+    );
+$$;
+
+revoke all on function private.ficha_visita_autorizada(uuid) from public, anon, authenticated;
+
+
+-- ---------------------------------------------------------------------
+-- 4. FICHAS DEL TRABAJADOR (para marcar en la app cuáles ya envió)
+-- ---------------------------------------------------------------------
+
+create or replace function public.mis_fichas_tecnicas()
 returns table (
-  meliponario_id    uuid,
-  nombre_meliponario text,
-  localidad_nombre  text,
-  fecha_aprobacion  timestamptz,
-  ficha_id          uuid,
-  fecha_inspeccion  timestamptz
+  asignacion_id    uuid,
+  ficha_id         uuid,
+  fecha_inspeccion timestamptz
 )
 language sql
 security definer
 set search_path = public
 stable
 as $$
-  with ultima as (
-    select distinct on (s.meliponario_id)
-      s.meliponario_id, s.estado, s.trabajador_revisor_id, s.fecha_resolucion
-    from solicitudes_meliponario s
-    order by s.meliponario_id, s.numero_intento desc
-  )
-  select
-    m.id,
-    m.nombre,
-    l.nombre,
-    u.fecha_resolucion,
-    f.id,
-    f.fecha_inspeccion
-  from ultima u
-  join meliponarios m on m.id = u.meliponario_id
-  left join localidades l on l.id = m.localidad_id
-  left join fichas_tecnicas f on f.meliponario_id = m.id
-  where u.estado = 'aprobada'
-    and u.trabajador_revisor_id = auth.uid()
-    and exists (
-      select 1 from perfiles p
-      where p.id = auth.uid() and p.rol_id = 4
-    )
-  order by (f.id is not null), u.fecha_resolucion desc nulls last;
+  select f.asignacion_id, f.id, f.fecha_inspeccion
+  from fichas_tecnicas f
+  where f.trabajador_id = auth.uid();
 $$;
 
 
 -- ---------------------------------------------------------------------
--- 4. CONSULTAR UNA FICHA (para editarla)
+-- 5. CONSULTAR UNA FICHA (para continuar o corregir)
 -- ---------------------------------------------------------------------
 
-create or replace function public.obtener_ficha_tecnica(p_meliponario_id uuid)
+create or replace function public.obtener_ficha_tecnica(p_asignacion_id uuid)
 returns jsonb
 language sql
 security definer
@@ -190,24 +210,27 @@ as $$
     ), '[]'::jsonb)
   )
   from fichas_tecnicas f
-  where f.meliponario_id = p_meliponario_id
+  where f.asignacion_id = p_asignacion_id
     and (
-      f.trabajador_id = auth.uid()
-      or exists (select 1 from perfiles p where p.id = auth.uid() and p.rol_id in (1, 2, 3))
+      private.ficha_visita_autorizada(p_asignacion_id) is not null
+      or exists (
+        select 1 from perfiles p
+        where p.id = auth.uid() and p.rol_id in (1, 2, 3) and p.activo
+      )
     );
 $$;
 
 
 -- ---------------------------------------------------------------------
--- 5. GUARDAR LA FICHA
+-- 6. GUARDAR LA FICHA
 --    p_respuestas: [{ "pregunta": "techo", "opcion": "otro", "texto_otro": "..." }, ...]
---    Reemplaza las respuestas anteriores de ese meliponario.
+--    Reemplaza las respuestas anteriores de esa visita.
 -- ---------------------------------------------------------------------
 
 create or replace function public.guardar_ficha_tecnica(
-  p_meliponario_id uuid,
-  p_respuestas     jsonb,
-  p_observaciones  text default null
+  p_asignacion_id uuid,
+  p_respuestas    jsonb,
+  p_observaciones text default null
 )
 returns uuid
 language plpgsql
@@ -215,29 +238,17 @@ security definer
 set search_path = public
 as $$
 declare
+  v_meliponario uuid;
   v_ficha uuid;
   v_item  jsonb;
   v_preg  text;
   v_opc   text;
   v_texto text;
 begin
-  if not exists (select 1 from perfiles where id = auth.uid() and rol_id = 4) then
-    raise exception 'Solo un trabajador de campo puede capturar la ficha técnica'
-      using errcode = '42501';
-  end if;
+  v_meliponario := private.ficha_visita_autorizada(p_asignacion_id);
 
-  -- Debe ser el trabajador que aprobó la última solicitud.
-  if not exists (
-    select 1
-    from (
-      select distinct on (s.meliponario_id) s.estado, s.trabajador_revisor_id
-      from solicitudes_meliponario s
-      where s.meliponario_id = p_meliponario_id
-      order by s.meliponario_id, s.numero_intento desc
-    ) u
-    where u.estado = 'aprobada' and u.trabajador_revisor_id = auth.uid()
-  ) then
-    raise exception 'El meliponario no está aprobado por tu cuenta'
+  if v_meliponario is null then
+    raise exception 'La visita no está asignada a tu cuenta o el meliponario está fuera de tu zona'
       using errcode = '42501';
   end if;
 
@@ -249,11 +260,10 @@ begin
     raise exception 'Observaciones: máximo 2000 caracteres' using errcode = '22023';
   end if;
 
-  insert into fichas_tecnicas (meliponario_id, trabajador_id, observaciones)
-  values (p_meliponario_id, auth.uid(), nullif(btrim(p_observaciones), ''))
-  on conflict (meliponario_id) do update
-    set trabajador_id = excluded.trabajador_id,
-        observaciones = excluded.observaciones,
+  insert into fichas_tecnicas (asignacion_id, meliponario_id, trabajador_id, observaciones)
+  values (p_asignacion_id, v_meliponario, auth.uid(), nullif(btrim(p_observaciones), ''))
+  on conflict (asignacion_id) do update
+    set observaciones = excluded.observaciones,
         fecha_inspeccion = now(),
         fecha_actualizacion = now()
   returning id into v_ficha;
@@ -287,7 +297,7 @@ $$;
 
 
 -- ---------------------------------------------------------------------
--- 6. ESTADÍSTICAS (coordinación y administración: roles 1, 2 y 3)
+-- 7. ESTADÍSTICAS (administración, investigación y coordinación: roles 1, 2 y 3)
 -- ---------------------------------------------------------------------
 
 -- Porcentaje de fichas que marcaron cada opción («otro» incluido).
@@ -321,7 +331,7 @@ as $$
   from ficha_tecnica_catalogo c
   left join fichas_tecnicas_respuestas r
     on r.pregunta = c.pregunta and r.opcion = c.opcion
-  where exists (select 1 from perfiles p where p.id = auth.uid() and p.rol_id in (1, 2, 3))
+  where exists (select 1 from perfiles p where p.id = auth.uid() and p.rol_id in (1, 2, 3) and p.activo)
   group by c.pregunta, c.opcion, c.etiqueta, c.orden
   order by c.pregunta, c.orden;
 $$;
@@ -329,9 +339,9 @@ $$;
 -- Lista aparte de lo que escribieron en «Otro», para analizarlo.
 create or replace function public.respuestas_otro_ficha_tecnica()
 returns table (
-  pregunta       text,
-  texto_otro     text,
-  meliponario_id uuid,
+  pregunta         text,
+  texto_otro       text,
+  meliponario_id   uuid,
   fecha_inspeccion timestamptz
 )
 language sql
@@ -343,22 +353,22 @@ as $$
   from fichas_tecnicas_respuestas r
   join fichas_tecnicas f on f.id = r.ficha_id
   where r.opcion = 'otro'
-    and exists (select 1 from perfiles p where p.id = auth.uid() and p.rol_id in (1, 2, 3))
+    and exists (select 1 from perfiles p where p.id = auth.uid() and p.rol_id in (1, 2, 3) and p.activo)
   order by r.pregunta, f.fecha_inspeccion desc;
 $$;
 
 
 -- ---------------------------------------------------------------------
--- 7. PERMISOS
+-- 8. PERMISOS
 -- ---------------------------------------------------------------------
 
-revoke all on function public.mis_inspecciones_por_realizar()              from public, anon;
-revoke all on function public.obtener_ficha_tecnica(uuid)                  from public, anon;
-revoke all on function public.guardar_ficha_tecnica(uuid, jsonb, text)     from public, anon;
-revoke all on function public.estadisticas_ficha_tecnica()                 from public, anon;
-revoke all on function public.respuestas_otro_ficha_tecnica()              from public, anon;
+revoke all on function public.mis_fichas_tecnicas()                    from public, anon;
+revoke all on function public.obtener_ficha_tecnica(uuid)              from public, anon;
+revoke all on function public.guardar_ficha_tecnica(uuid, jsonb, text) from public, anon;
+revoke all on function public.estadisticas_ficha_tecnica()             from public, anon;
+revoke all on function public.respuestas_otro_ficha_tecnica()          from public, anon;
 
-grant execute on function public.mis_inspecciones_por_realizar()          to authenticated;
+grant execute on function public.mis_fichas_tecnicas()                    to authenticated;
 grant execute on function public.obtener_ficha_tecnica(uuid)              to authenticated;
 grant execute on function public.guardar_ficha_tecnica(uuid, jsonb, text) to authenticated;
 grant execute on function public.estadisticas_ficha_tecnica()             to authenticated;

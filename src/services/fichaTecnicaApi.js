@@ -191,28 +191,62 @@ function desdeServidor(lista = []) {
    SUPABASE
 ===================================================== */
 
+const esFaltaBackend = (error) =>
+  error?.code === "PGRST202" || error?.code === "42883";
+
 function mensajeFaltaBackend(error) {
-  if (error?.code === "PGRST202" || error?.code === "42883") {
+  if (esFaltaBackend(error)) {
     return new Error(
-      "La ficha técnica todavía no está instalada en Supabase. " +
-      "Hay que ejecutar supabase/migrations/20261106000000_ficha_tecnica.sql."
+      "El envío de la ficha técnica todavía no está instalado en Supabase. " +
+      "Tus respuestas quedan guardadas en este teléfono."
     );
   }
 
   return error;
 }
 
-export async function getMisInspeccionesPorRealizarRequest() {
-  const { data, error } = await supabase.rpc("mis_inspecciones_por_realizar");
+/**
+ * Visitas que el coordinador de campo asignó al trabajador actual,
+ * cada una con su ficha técnica si ya se envió.
+ * La lista viene de mis_visitas_tecnicas_asignadas (ya existe en el
+ * backend); el estado de la ficha, de mis_fichas_tecnicas (propuesta).
+ */
+export async function getMisVisitasAsignadasRequest() {
+  const [visitasRes, fichasRes] = await Promise.all([
+    supabase.rpc("mis_visitas_tecnicas_asignadas", {}),
+    supabase.rpc("mis_fichas_tecnicas"),
+  ]);
 
-  if (error) throw mensajeFaltaBackend(error);
+  if (visitasRes.error) throw visitasRes.error;
 
-  return Array.isArray(data) ? data : [];
+  const fichas = new Map(
+    (fichasRes.error ? [] : fichasRes.data ?? []).map((f) => [
+      String(f.asignacion_id),
+      f,
+    ])
+  );
+
+  const visitas = (Array.isArray(visitasRes.data) ? visitasRes.data : []).map(
+    (v) => {
+      const ficha = fichas.get(String(v.asignacion_id));
+      return {
+        ...v,
+        ficha_id: ficha?.ficha_id ?? null,
+        fecha_inspeccion: ficha?.fecha_inspeccion ?? null,
+      };
+    }
+  );
+
+  return {
+    visitas,
+    // false = el backend aún no tiene la ficha técnica instalada.
+    fichaDisponible: !fichasRes.error || !esFaltaBackend(fichasRes.error),
+  };
 }
 
-export async function obtenerFichaTecnicaRequest(meliponarioId) {
+export async function obtenerFichaTecnicaRequest(asignacionId) {
   const { data, error } = await supabase.rpc("obtener_ficha_tecnica", {
-    p_meliponario_id: meliponarioId,
+    p_asignacion_id: asignacionId,
   });
 
   if (error) throw mensajeFaltaBackend(error);
@@ -226,7 +260,7 @@ export async function obtenerFichaTecnicaRequest(meliponarioId) {
 }
 
 export async function guardarFichaTecnicaRequest(
-  meliponarioId,
+  asignacionId,
   respuestas,
   observaciones
 ) {
@@ -234,14 +268,14 @@ export async function guardarFichaTecnicaRequest(
   if (problema) throw new Error(problema);
 
   const { data, error } = await supabase.rpc("guardar_ficha_tecnica", {
-    p_meliponario_id: meliponarioId,
+    p_asignacion_id: asignacionId,
     p_respuestas: construirRespuestas(respuestas),
     p_observaciones: String(observaciones ?? "").trim() || null,
   });
 
   if (error) throw mensajeFaltaBackend(error);
 
-  await borrarBorradorFicha(meliponarioId);
+  await borrarBorradorFicha(asignacionId);
 
   return data;
 }
@@ -253,21 +287,22 @@ export async function guardarFichaTecnicaRequest(
    en el teléfono hasta que se envía.
 ===================================================== */
 
-const clave = (id) => `kaabmap:ficha-tecnica:${id}`;
+// Un borrador por visita asignada.
+const clave = (id) => `kaabmap:ficha-tecnica:visita:${id}`;
 
-export async function leerBorradorFicha(meliponarioId) {
+export async function leerBorradorFicha(asignacionId) {
   try {
-    const valor = await AsyncStorage.getItem(clave(meliponarioId));
+    const valor = await AsyncStorage.getItem(clave(asignacionId));
     return valor ? JSON.parse(valor) : null;
   } catch {
     return null;
   }
 }
 
-export async function guardarBorradorFicha(meliponarioId, borrador) {
+export async function guardarBorradorFicha(asignacionId, borrador) {
   try {
     await AsyncStorage.setItem(
-      clave(meliponarioId),
+      clave(asignacionId),
       JSON.stringify({ ...borrador, guardado: new Date().toISOString() })
     );
   } catch {
@@ -275,9 +310,9 @@ export async function guardarBorradorFicha(meliponarioId, borrador) {
   }
 }
 
-export async function borrarBorradorFicha(meliponarioId) {
+export async function borrarBorradorFicha(asignacionId) {
   try {
-    await AsyncStorage.removeItem(clave(meliponarioId));
+    await AsyncStorage.removeItem(clave(asignacionId));
   } catch {
     // Nada que hacer.
   }

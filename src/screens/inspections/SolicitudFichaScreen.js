@@ -44,8 +44,8 @@ const DECISIONES = {
       "Al confirmar se aprobará la solicitud y se publicará su ficha con " +
       "los datos revisados. Las observaciones de revisión permanecerán privadas.",
     exito:
-      "La solicitud fue aprobada. Ahora aparece en «Inspecciones por " +
-      "realizar» para que visites el meliponario y llenes su ficha técnica.",
+      "La solicitud fue aprobada. El coordinador de campo asignará la " +
+      "visita; cuando lo haga, aparecerá en «Visitas asignadas».",
   },
   solicitar_correccion: {
     titulo: "Solicitar correcciones",
