@@ -19,8 +19,9 @@ import { useMeliponarioDraft } from "../../context/MeliponarioDraftContext";
 import { useAuth } from "../../context/AuthContext";
 import { COLORS } from "../../theme/colors";
 import { styles } from "./RegisterStep1Screen.styles";
+import { MAX_FOTOS, MIN_FOTOS } from "../../config/fotos";
 
-const MAX_IMAGES = 3;
+const MAX_IMAGES = MAX_FOTOS;
 
 // Lo que ofrece el meliponario. Define el color del marcador
 // y permite mostrarlo en el mapa público una vez aprobado.
@@ -91,6 +92,12 @@ export default function RegisterStep1Screen({ navigation }) {
   const authProfile = profile || perfil || null;
 
   const responsableNombre = useMemo(() => {
+    // Al editar un aprobado, el responsable es el dueño del meliponario
+    // (puede editarlo el trabajador de campo que lo aprobó).
+    if (draft?.modoEdicion === "aprobado" && draft?.responsableNombre) {
+      return draft.responsableNombre;
+    }
+
     const nombre =
       authProfile?.nombre?.trim?.() || "";
 
@@ -111,7 +118,7 @@ export default function RegisterStep1Screen({ navigation }) {
       `${metaNombre} ${metaApellidos}`.trim() ||
       "Usuario"
     );
-  }, [authProfile, user]);
+  }, [authProfile, user, draft?.modoEdicion, draft?.responsableNombre]);
 
   const [nombre, setNombre] = useState(
     draft?.nombre || ""
@@ -140,7 +147,7 @@ export default function RegisterStep1Screen({ navigation }) {
     if (imagenes.length >= MAX_IMAGES) {
       aviso(
         "Límite alcanzado",
-        "Solo puedes seleccionar tres fotografías."
+        `Puedes agregar hasta ${MAX_IMAGES} fotografías.`
       );
       return;
     }
@@ -206,11 +213,29 @@ export default function RegisterStep1Screen({ navigation }) {
     );
   };
 
+  // Descripción breve y opcional de cada foto nueva.
+  const describirFoto = (index, texto) => {
+    setImagenes((anteriores) =>
+      anteriores.map((foto, i) =>
+        i === index ? { ...foto, descripcion: texto } : foto
+      )
+    );
+  };
+
   const handleNext = () => {
     if (!oferta) {
       aviso(
         "Falta un dato",
         "Elige si el meliponario es para visitas, venta de miel o ambas."
+      );
+      return;
+    }
+
+    if (imagenes.length < MIN_FOTOS) {
+      aviso(
+        "Faltan fotografías",
+        `Agrega al menos ${MIN_FOTOS} fotografías del meliponario ` +
+        `(llevas ${imagenes.length}).`
       );
       return;
     }
@@ -233,7 +258,7 @@ export default function RegisterStep1Screen({ navigation }) {
     <RegisterLayout
       navigation={navigation}
       step={1}
-      title="Registrar meliponario"
+      title={draft?.modoEdicion === "aprobado" ? "Editar meliponario" : "Registrar meliponario"}
       subtitle="Información general"
     >
       <ScrollView
@@ -375,68 +400,99 @@ export default function RegisterStep1Screen({ navigation }) {
         </Text>
 
         <Text style={styles.helpText}>
-          Puedes seleccionar hasta 3 imágenes.
-          Se subirán al guardar el borrador.
-          
-          Debes cargar al menos 1 imagen.
+          Agrega de {MIN_FOTOS} a {MAX_IMAGES} fotografías. A cada una le
+          puedes poner una descripción breve (opcional). Se subirán al
+          guardar.
         </Text>
 
-        <View style={styles.imagesGrid}>
-          {Array.from({ length: MAX_IMAGES }).map(
-            (_, index) => {
-              const foto = imagenes[index];
-              const uri = foto?.uri;
+        <Text
+          style={[
+            styles.photoCounter,
+            imagenes.length >= MIN_FOTOS && styles.photoCounterOk,
+          ]}
+        >
+          {imagenes.length} de {MAX_IMAGES} fotos
+          {imagenes.length < MIN_FOTOS
+            ? MIN_FOTOS - imagenes.length === 1
+              ? " · falta 1 obligatoria"
+              : ` · faltan ${MIN_FOTOS - imagenes.length} obligatorias`
+            : " · listo"}
+        </Text>
 
-              if (uri) {
-                return (
-                  <View
-                    key={index}
-                    style={styles.imageCard}
-                  >
-                    <Image
-                      source={{ uri }}
-                      style={styles.imagePreview}
+        {/* Una fila por foto: miniatura + descripción opcional. */}
+        <View style={styles.photoList}>
+          {imagenes.map((foto, index) => {
+            const remota = Boolean(foto?.remoteId || foto?.ruta_storage);
+
+            return (
+              <View key={`${index}-${foto?.uri}`} style={styles.photoRow}>
+                <Image
+                  source={{ uri: foto?.uri }}
+                  style={styles.photoThumb}
+                  accessibilityLabel={`Fotografía ${index + 1}`}
+                />
+
+                <View style={styles.photoInfo}>
+                  <Text style={styles.photoLabel}>
+                    Foto {index + 1}
+                    {index < MIN_FOTOS ? " · obligatoria" : ""}
+                  </Text>
+
+                  {remota ? (
+                    <Text style={styles.photoSaved}>
+                      {foto?.descripcion
+                        ? foto.descripcion
+                        : "Ya guardada, sin descripción."}
+                    </Text>
+                  ) : (
+                    <TextInput
+                      value={foto?.descripcion ?? ""}
+                      onChangeText={(texto) => describirFoto(index, texto)}
+                      placeholder="Descripción breve (opcional)"
+                      placeholderTextColor={COLORS.gray}
+                      maxLength={120}
+                      style={styles.photoInput}
+                      accessibilityLabel={`Descripción de la foto ${index + 1}`}
                     />
+                  )}
+                </View>
 
-                    <TouchableOpacity
-                      style={styles.removeButton}
-                      accessibilityLabel={
-                        `Quitar fotografía ${index + 1}`
-                      }
-                      onPress={() => removeImage(index)}
-                    >
-                      <Ionicons
-                        name="close"
-                        size={16}
-                        color="#FFFFFF"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                );
-              }
-
-              return (
                 <TouchableOpacity
-                  key={index}
-                  style={styles.uploadCard}
-                  onPress={pickImage}
+                  style={styles.photoRemove}
+                  accessibilityLabel={`Quitar fotografía ${index + 1}`}
+                  onPress={() => removeImage(index)}
+                  hitSlop={8}
                 >
-                  <Ionicons
-                    name="image-outline"
-                    size={28}
-                    color={COLORS.primaryDark}
-                  />
-
-                  <Text style={styles.uploadTitle}>
-                    Agregar foto
-                  </Text>
-
-                  <Text style={styles.uploadSubtitle}>
-                    {index + 1} de {MAX_IMAGES}
-                  </Text>
+                  <Ionicons name="trash-outline" size={20} color="#B42318" />
                 </TouchableOpacity>
-              );
-            }
+              </View>
+            );
+          })}
+
+          {imagenes.length < MAX_IMAGES && (
+            <TouchableOpacity
+              style={styles.uploadRow}
+              onPress={pickImage}
+              accessibilityRole="button"
+            >
+              <Ionicons
+                name="add-circle-outline"
+                size={26}
+                color={COLORS.primaryDark}
+              />
+
+              <View>
+                <Text style={styles.uploadTitle}>
+                  Agregar foto
+                </Text>
+
+                <Text style={styles.uploadSubtitle}>
+                  {imagenes.length < MIN_FOTOS
+                    ? "Obligatoria"
+                    : `Opcional · puedes agregar ${MAX_IMAGES - imagenes.length} más`}
+                </Text>
+              </View>
+            </TouchableOpacity>
           )}
         </View>
 

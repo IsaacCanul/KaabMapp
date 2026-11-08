@@ -1,3 +1,4 @@
+import { MAX_FOTOS } from "../config/fotos";
 import {
   getMeliponarioPhotos,
 } from "./meliponarioPhotos";
@@ -44,9 +45,9 @@ export async function migrarFotosAnteriores(
     );
   }
 
-  // 3. Preparar hasta tres fotografías.
+  // 3. Preparar hasta MAX_FOTOS fotografías.
   const fotos = locales
-    .slice(0, 3)
+    .slice(0, MAX_FOTOS)
     .map((foto, index) => {
       const uri =
         typeof foto === "string"

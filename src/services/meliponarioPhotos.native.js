@@ -1,3 +1,4 @@
+import { MAX_FOTOS } from "../config/fotos";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 
@@ -26,7 +27,7 @@ export async function persistPendingPhotos(
   images = []
 ) {
   const list = Array.isArray(images)
-    ? images.slice(0, 3)
+    ? images.slice(0, MAX_FOTOS)
     : [];
 
   if (!list.length) {
@@ -74,6 +75,8 @@ export async function persistPendingPhotos(
 
   return paths.map((_, i) => ({
     id: `foto-${i + 1}`,
+    // Se conserva la descripción opcional escrita en el registro.
+    descripcion: list[i]?.descripcion ?? null,
   }));
 }
 

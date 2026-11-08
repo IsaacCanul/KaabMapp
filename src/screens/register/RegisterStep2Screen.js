@@ -834,7 +834,7 @@ export default function RegisterStep2Screen({
     <RegisterLayout
       navigation={navigation}
       step={2}
-      title="Registrar meliponario"
+      title={draft?.modoEdicion === "aprobado" ? "Editar meliponario" : "Registrar meliponario"}
       subtitle="Ubicación"
     >
       <Text style={styles.intro}>
