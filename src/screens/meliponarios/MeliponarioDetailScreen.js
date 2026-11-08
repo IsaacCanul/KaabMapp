@@ -7,6 +7,7 @@ import React, {
 } from "react";
 
 import {
+  AccessibilityInfo,
   ActivityIndicator,
   Alert,
   Image,
@@ -20,6 +21,7 @@ import {
 } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import PhotoViewer from "../../components/PhotoViewer";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -202,6 +204,7 @@ export default function MeliponarioDetailScreen({
   // la ficha pública debe venir de la consulta autorizada del servidor.
   const [record, setRecord] = useState(user?.id ? initial : null);
   const [photos, setPhotos] = useState([]);
+  const [photoCaptions, setPhotoCaptions] = useState([]);
   const [productos, setProductos] = useState([]);
   const [fotosProductos, setFotosProductos] = useState({});
   const [errorProductos, setErrorProductos] = useState("");
@@ -211,6 +214,12 @@ export default function MeliponarioDetailScreen({
   const [favorite, setFavorite] = useState(false);
   const [index, setIndex] = useState(0);
   const [galleryWidth, setGalleryWidth] = useState(0);
+
+  // Carrusel: avanza solo; se pausa mientras se desliza a mano,
+  // con la foto ampliada o si el usuario pidió reducir movimiento.
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   const galleryRef = useRef(null);
 
@@ -222,6 +231,7 @@ export default function MeliponarioDetailScreen({
   useEffect(() => {
     setRecord(user?.id ? initial : null);
     setPhotos([]);
+    setPhotoCaptions([]);
     setProductos([]);
     setFotosProductos({});
     setErrorProductos("");
@@ -270,15 +280,17 @@ export default function MeliponarioDetailScreen({
               console.warn("DETALLE PRIVADO:", e?.message);
             }
           }
-          return getDetalleMeliponarioPublicoRequest(id);
+          // Todo lo que entrega la lista pública ya está publicado.
+          const publico = await getDetalleMeliponarioPublicoRequest(id);
+          return publico ? { visibilidad: "publico", ...publico } : publico;
         };
 
         const results = await Promise.allSettled([
           cargarDetalle(),
-          // Las fotos y productos actuales se administran por cuenta.
-          // Su publicación para visitantes requiere una API pública
-          // autorizada del equipo de backend.
-          user?.id ? obtenerImagenesRemotas(id) : Promise.resolve([]),
+          // Fotos: listar_imagenes_meliponario también responde a
+          // visitantes para los meliponarios publicados.
+          // Productos: se administran por cuenta.
+          obtenerImagenesRemotas(id),
           user?.id ? listarProductosRequest(id) : Promise.resolve([]),
           favoriteKey
             ? AsyncStorage.getItem(favoriteKey)
@@ -326,10 +338,13 @@ export default function MeliponarioDetailScreen({
             ? results[1].value
             : [];
 
-          setPhotos(
-            items
-              .map((foto) => foto.uri)
-              .filter(Boolean)
+          const conUri = items.filter((foto) => foto?.uri);
+
+          setPhotos(conUri.map((foto) => foto.uri));
+
+          // Descripción opcional de cada foto (misma posición).
+          setPhotoCaptions(
+            conUri.map((foto) => String(foto.descripcion ?? "").trim())
           );
 
           setIndex(0);
@@ -345,6 +360,7 @@ export default function MeliponarioDetailScreen({
           );
 
           setPhotos([]);
+          setPhotoCaptions([]);
         }
 
         if (results[2].status === "fulfilled") {
@@ -415,6 +431,32 @@ export default function MeliponarioDetailScreen({
       });
     }
   };
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled?.()
+      .then((v) => setReduceMotion(Boolean(v)))
+      .catch(() => {});
+  }, []);
+
+  // Avance automático cada 4 s. Se reinicia en cada cambio de foto,
+  // así un deslizamiento manual también reinicia la cuenta.
+  useEffect(() => {
+    if (
+      photos.length < 2 ||
+      galleryWidth <= 0 ||
+      viewerOpen ||
+      dragging ||
+      reduceMotion
+    ) {
+      return;
+    }
+
+    const t = setTimeout(() => {
+      goToPhoto((index + 1) % photos.length);
+    }, 4000);
+
+    return () => clearTimeout(t);
+  }, [index, photos.length, galleryWidth, viewerOpen, dragging, reduceMotion]);
 
   const status = useMemo(
     () => getStatus(record),
@@ -650,18 +692,30 @@ export default function MeliponarioDetailScreen({
               showsHorizontalScrollIndicator={false}
               scrollEventThrottle={16}
               onScroll={onGalleryScroll}
+              onScrollBeginDrag={() => setDragging(true)}
+              onScrollEndDrag={() => setDragging(false)}
               onMomentumScrollEnd={onGalleryScroll}
             >
               {photos.map((uri, photoIndex) => (
-                <Image
+                <TouchableOpacity
                   key={`${photoIndex}-${uri}`}
-                  source={{ uri }}
-                  style={[
-                    styles.galleryImage,
-                    { width: galleryWidth || 1 },
-                  ]}
-                  resizeMode="cover"
-                />
+                  activeOpacity={0.9}
+                  onPress={() => {
+                    setIndex(photoIndex);
+                    setViewerOpen(true);
+                  }}
+                  accessibilityRole="imagebutton"
+                  accessibilityLabel={`Ampliar fotografía ${photoIndex + 1} de ${photos.length}`}
+                >
+                  <Image
+                    source={{ uri }}
+                    style={[
+                      styles.galleryImage,
+                      { width: galleryWidth || 1 },
+                    ]}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
               ))}
             </ScrollView>
           ) : (
@@ -692,6 +746,14 @@ export default function MeliponarioDetailScreen({
               color={GREEN}
             />
           </TouchableOpacity>
+
+          {!!photoCaptions[index] && (
+            <View style={styles.photoCaption} pointerEvents="none">
+              <Text style={styles.photoCaptionText} numberOfLines={2}>
+                {photoCaptions[index]}
+              </Text>
+            </View>
+          )}
 
           {photos.length > 1 && (
             <View style={styles.dots}>
@@ -1017,6 +1079,18 @@ export default function MeliponarioDetailScreen({
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* FOTO AMPLIADA */}
+      <PhotoViewer
+        visible={viewerOpen}
+        photos={photos}
+        captions={photoCaptions}
+        initialIndex={index}
+        onClose={(ultima) => {
+          setViewerOpen(false);
+          goToPhoto(ultima);
+        }}
+      />
     </SafeAreaView>
   );
 }

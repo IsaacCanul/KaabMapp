@@ -9,9 +9,10 @@ import { decode }
 import { supabase }
   from "../lib/supabase";
 
+import { MAX_FOTOS } from "../config/fotos";
+
 
 const BUCKET = "kaabmap-meliponarios";
-const MAX_FOTOS = 3;
 
 
 /* =========================================
@@ -250,8 +251,9 @@ export async function subirImagenRemota(
       p_tipo_mime:
         mimeType,
 
+      // Descripción breve y opcional escrita en el registro.
       p_descripcion:
-        foto.descripcion ?? null,
+        String(foto.descripcion ?? "").trim().slice(0, 120) || null,
     }
   );
 
@@ -336,7 +338,7 @@ export async function subirImagenRemota(
 
 
 /* =========================================
-   SUBIR HASTA 3 FOTOGRAFÍAS
+   SUBIR HASTA MAX_FOTOS FOTOGRAFÍAS
 ========================================= */
 
 export async function subirFotosSeleccionadas(
@@ -353,7 +355,7 @@ export async function subirFotosSeleccionadas(
     seleccionadas.length > MAX_FOTOS
   ) {
     throw new Error(
-      "Solo puedes registrar hasta tres fotografías."
+      `Solo puedes registrar hasta ${MAX_FOTOS} fotografías.`
     );
   }
 

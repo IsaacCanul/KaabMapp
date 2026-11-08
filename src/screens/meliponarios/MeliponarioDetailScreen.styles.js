@@ -122,6 +122,28 @@ export const styles = StyleSheet.create({
   },
 
   /* ===============================================
+     DESCRIPCIÓN DE LA FOTO
+  =============================================== */
+
+  photoCaption: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 34,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: "rgba(0,0,0,0.58)",
+    zIndex: 4,
+  },
+
+  photoCaptionText: {
+    color: WHITE,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
+  /* ===============================================
      CONTADOR
   =============================================== */
 
