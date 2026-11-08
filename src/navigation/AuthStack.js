@@ -13,6 +13,9 @@ import RegisterScreen
 import ForgotPasswordScreen
   from "../screens/auth/ForgotPasswordScreen";
 
+import TermsScreen
+  from "../screens/auth/TermsScreen";
+
 import EmailVerificationPendingScreen
   from "../screens/auth/EmailVerificationPendingScreen";
 
@@ -20,8 +23,7 @@ import EmailVerifiedScreen
   from "../screens/auth/EmailVerifiedScreen";
 
 
-const Stack =
-  createNativeStackNavigator();
+const Stack = createNativeStackNavigator();
 
 
 export default function AuthStack() {
@@ -29,43 +31,37 @@ export default function AuthStack() {
     <Stack.Navigator
       initialRouteName="Login"
       screenOptions={{
-        headerShown:
-          false,
+        headerShown: false,
       }}
     >
       <Stack.Screen
         name="Login"
-        component={
-          LoginScreen
-        }
+        component={LoginScreen}
       />
 
       <Stack.Screen
         name="Register"
-        component={
-          RegisterScreen
-        }
+        component={RegisterScreen}
+      />
+
+      <Stack.Screen
+        name="Terms"
+        component={TermsScreen}
       />
 
       <Stack.Screen
         name="ForgotPassword"
-        component={
-          ForgotPasswordScreen
-        }
+        component={ForgotPasswordScreen}
       />
 
       <Stack.Screen
         name="EmailVerificationPending"
-        component={
-          EmailVerificationPendingScreen
-        }
+        component={EmailVerificationPendingScreen}
       />
 
       <Stack.Screen
         name="EmailVerified"
-        component={
-          EmailVerifiedScreen
-        }
+        component={EmailVerifiedScreen}
       />
     </Stack.Navigator>
   );

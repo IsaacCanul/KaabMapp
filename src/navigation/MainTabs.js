@@ -1,326 +1,128 @@
 import React from "react";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
-import {
-  createBottomTabNavigator,
-} from "@react-navigation/bottom-tabs";
+import HomeStack from "./stacks/HomeStack";
+import MapStack from "./stacks/MapStack";
+import ExploreStack from "./stacks/ExploreStack";
+import AccountStack from "./stacks/AccountStack";
+import MyRecordsStack from "./stacks/MyRecordsStack";
+import InspectionsStack from "./stacks/InspectionsStack";
 
-import {
-  Ionicons,
-} from "@expo/vector-icons";
+import { useAuth } from "../context/AuthContext";
+import { COLORS } from "../theme/colors";
 
-import HomeStack
-  from "./stacks/HomeStack";
-
-import MapStack
-  from "./stacks/MapStack";
-
-import ExploreStack
-  from "./stacks/ExploreStack";
-
-import AccountStack
-  from "./stacks/AccountStack";
-
-import MyRecordsStack
-  from "./stacks/MyRecordsStack";
-
-import InspectionsScreen
-  from "../screens/inspections/InspectionsScreen";
-
-import {
-  useAuth,
-} from "../context/AuthContext";
-
-import {
-  COLORS,
-} from "../theme/colors";
-
-
-const Tab =
-  createBottomTabNavigator();
-
-
-/*
- * IMPORTANTE:
- * Todavía necesitamos conocer qué rol_id
- * corresponde realmente al trabajador
- * de campo.
- *
- * Cuando lo sepamos, por ejemplo si es 4:
- *
- * const FIELD_WORKER_ROLE_ID = 4;
- */
-const FIELD_WORKER_ROLE_ID = null;
-
+const Tab = createBottomTabNavigator();
+const FIELD_WORKER_ROLE_ID = 4;
 
 export default function MainTabs() {
-  const {
-    isAuthenticated,
-    perfil,
-    loading,
-  } = useAuth();
-
+  const { isAuthenticated, perfil, loading } = useAuth();
+  const insets = useSafeAreaInsets();
+  const bottomSpace = Math.max(insets.bottom, 12);
 
   const isFieldWorker =
     isAuthenticated &&
-    FIELD_WORKER_ROLE_ID !== null &&
-    Number(perfil?.rol_id) ===
-      Number(
-        FIELD_WORKER_ROLE_ID
-      );
+    Number(perfil?.rol_id) === FIELD_WORKER_ROLE_ID;
 
+  const navigatorKey = !isAuthenticated
+    ? "guest"
+    : isFieldWorker
+      ? "field-worker"
+      : "registered-user";
 
-  /*
-   * Hace que los tabs se reconstruyan
-   * automáticamente cuando:
-   *
-   * visitante -> usuario registrado
-   * usuario -> cerrar sesión
-   * usuario -> trabajador
-   */
-  const navigatorKey =
-    !isAuthenticated
-      ? "guest"
-      : isFieldWorker
-        ? "field-worker"
-        : "registered-user";
+  if (loading) return null;
 
-
-  if (loading) {
-    return null;
-  }
-
+  const iconos = {
+    Inicio: ["home-outline", "home"],
+    Mapa: ["map-outline", "map"],
+    Explorar: ["compass-outline", "compass"],
+    "Mis registros": [
+      "file-tray-full-outline",
+      "file-tray-full",
+    ],
+    "Mis inspecciones": [
+      "shield-checkmark-outline",
+      "shield-checkmark",
+    ],
+    Cuenta: ["person-outline", "person"],
+  };
 
   return (
     <Tab.Navigator
       key={navigatorKey}
       initialRouteName="Inicio"
-      screenOptions={({
-        route,
-      }) => ({
+      screenOptions={({ route }) => ({
         headerShown: false,
-
-        tabBarActiveTintColor:
-          COLORS.primary,
-
-        tabBarInactiveTintColor:
-          COLORS.gray,
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.gray,
 
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: "700",
+          marginTop: 2,
         },
 
         tabBarStyle: {
-          height: 68,
-
+          // Se suma el espacio de la barra de gestos de Android/iOS.
+          height: 62 + bottomSpace,
           paddingTop: 7,
-
-          paddingBottom: 8,
-
-          backgroundColor:
-            COLORS.white,
-
+          paddingBottom: bottomSpace,
+          backgroundColor: COLORS.white,
           borderTopWidth: 1,
-
-          borderTopColor:
-            COLORS.border,
+          borderTopColor: COLORS.border,
         },
 
-
-        tabBarIcon: ({
-          color,
-          size,
-          focused,
-        }) => {
-          let iconName =
-            "ellipse-outline";
-
-
-          /*
-           * INICIO
-           */
-          if (
-            route.name ===
-            "Inicio"
-          ) {
-            iconName =
-              focused
-                ? "home"
-                : "home-outline";
-          }
-
-
-          /*
-           * MAPA
-           */
-          else if (
-            route.name ===
-            "Mapa"
-          ) {
-            iconName =
-              focused
-                ? "map"
-                : "map-outline";
-          }
-
-
-          /*
-           * EXPLORAR
-           */
-          else if (
-            route.name ===
-            "Explorar"
-          ) {
-            iconName =
-              focused
-                ? "compass"
-                : "compass-outline";
-          }
-
-
-          /*
-           * MIS REGISTROS
-           */
-          else if (
-            route.name ===
-            "Mis registros"
-          ) {
-            iconName =
-              focused
-                ? "file-tray-full"
-                : "file-tray-full-outline";
-          }
-
-
-          /*
-           * MIS INSPECCIONES
-           */
-          else if (
-            route.name ===
-            "Mis inspecciones"
-          ) {
-            iconName =
-              focused
-                ? "clipboard"
-                : "clipboard-outline";
-          }
-
-
-          /*
-           * CUENTA
-           */
-          else if (
-            route.name ===
-            "Cuenta"
-          ) {
-            iconName =
-              focused
-                ? "person"
-                : "person-outline";
-          }
-
+        tabBarIcon: ({ color, size, focused }) => {
+          const nombres = iconos[route.name] ?? [
+            "ellipse-outline",
+            "ellipse",
+          ];
 
           return (
             <Ionicons
-              name={iconName}
-              size={size}
+              name={nombres[focused ? 1 : 0]}
               color={color}
+              size={size}
             />
           );
         },
       })}
     >
-
-      {/* =========================
-          INICIO
-      ========================= */}
       <Tab.Screen
         name="Inicio"
-        component={
-          HomeStack
-        }
+        component={HomeStack}
       />
 
-
-      {/* =========================
-          MAPA
-      ========================= */}
       <Tab.Screen
         name="Mapa"
-        component={
-          MapStack
-        }
+        component={MapStack}
       />
-
-
-      {/* =========================
-          TERCER TAB DINÁMICO
-      ========================= */}
 
       {!isAuthenticated ? (
-
-        /*
-         * VISITANTE
-         *
-         * Inicio
-         * Mapa
-         * Explorar
-         * Cuenta
-         */
         <Tab.Screen
           name="Explorar"
-          component={
-            ExploreStack
-          }
+          component={ExploreStack}
         />
-
       ) : isFieldWorker ? (
-
-        /*
-         * TRABAJADOR DE CAMPO
-         *
-         * Inicio
-         * Mapa
-         * Mis inspecciones
-         * Cuenta
-         */
         <Tab.Screen
           name="Mis inspecciones"
-          component={
-            InspectionsScreen
-          }
+          component={InspectionsStack}
+          // Etiqueta corta para que quepa en la barra; el nombre
+          // de la ruta se conserva porque Perfil navega con él.
+          options={{ tabBarLabel: "Revisiones" }}
         />
-
       ) : (
-
-        /*
-         * USUARIO REGISTRADO
-         *
-         * Inicio
-         * Mapa
-         * Mis registros
-         * Cuenta
-         */
         <Tab.Screen
           name="Mis registros"
-          component={
-            MyRecordsStack
-          }
+          component={MyRecordsStack}
         />
-
       )}
 
-
-      {/* =========================
-          CUENTA
-      ========================= */}
       <Tab.Screen
         name="Cuenta"
-        component={
-          AccountStack
-        }
+        component={AccountStack}
       />
-
     </Tab.Navigator>
   );
 }
