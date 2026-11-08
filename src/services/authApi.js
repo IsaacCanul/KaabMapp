@@ -31,6 +31,7 @@ export async function registerRequest({
   telefono,
   institucion,
   password,
+  terminosVersion,
 }) {
   const finalNombre =
     String(
@@ -95,6 +96,16 @@ export async function registerRequest({
           institucion:
             finalInstitucion ||
             null,
+
+          // Constancia de la aceptación de términos y aviso de privacidad.
+          terminos_version:
+            terminosVersion ??
+            null,
+
+          terminos_aceptados_en:
+            terminosVersion
+              ? new Date().toISOString()
+              : null,
         },
       },
     });
