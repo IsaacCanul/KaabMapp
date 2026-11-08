@@ -1,4 +1,5 @@
 import React, {
+  useEffect,
   useState,
 } from "react";
 
@@ -27,6 +28,10 @@ import {
 } from "../../services/authApi";
 
 import {
+  TERMINOS_VERSION,
+} from "../../legal/terminos";
+
+import {
   COLORS,
 } from "../../theme/colors";
 
@@ -37,7 +42,21 @@ import {
 
 export default function RegisterScreen({
   navigation,
+  route,
 }) {
+  // Aceptación obligatoria de términos y aviso de privacidad.
+  const [aceptaTerminos, setAceptaTerminos] =
+    useState(false);
+
+  // «He leído y acepto» en la pantalla de términos regresa aquí.
+  useEffect(() => {
+    if (route?.params?.aceptoTerminos) {
+      setAceptaTerminos(true);
+      setError("");
+      navigation.setParams({ aceptoTerminos: undefined });
+    }
+  }, [route?.params?.aceptoTerminos]);
+
   const [form, setForm] =
     useState({
       nombre: "",
@@ -190,6 +209,14 @@ export default function RegisterScreen({
       }
 
 
+      if (!aceptaTerminos) {
+        setError(
+          "Para crear tu cuenta debes aceptar los Términos y condiciones y el Aviso de privacidad."
+        );
+        return;
+      }
+
+
       /*
        * =========================
        * REGISTRO EN SUPABASE
@@ -211,6 +238,8 @@ export default function RegisterScreen({
             telefono,
             institucion,
             password,
+            terminosVersion:
+              TERMINOS_VERSION,
           });
 
         console.log(
@@ -643,6 +672,77 @@ export default function RegisterScreen({
             COLORS.gray
           }
         />
+
+
+        {/* TÉRMINOS Y CONDICIONES */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "flex-start",
+            gap: 10,
+            marginTop: 16,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => {
+              setAceptaTerminos(
+                (v) => !v
+              );
+              setError("");
+            }}
+            accessibilityRole="checkbox"
+            accessibilityState={{
+              checked:
+                aceptaTerminos,
+            }}
+            accessibilityLabel="Acepto los Términos y condiciones y el Aviso de privacidad"
+            hitSlop={8}
+          >
+            <Ionicons
+              name={
+                aceptaTerminos
+                  ? "checkbox"
+                  : "square-outline"
+              }
+              size={26}
+              color={
+                COLORS.primary
+              }
+            />
+          </TouchableOpacity>
+
+          <Text
+            style={{
+              flex: 1,
+              fontSize: 14,
+              lineHeight: 21,
+              color: COLORS.text,
+            }}
+          >
+            Acepto los{" "}
+            <Text
+              style={{
+                color:
+                  COLORS.primary,
+                fontWeight: "800",
+                textDecorationLine:
+                  "underline",
+              }}
+              onPress={() =>
+                navigation.navigate(
+                  "Terms",
+                  {
+                    desdeRegistro: true,
+                  }
+                )
+              }
+              accessibilityRole="link"
+            >
+              Términos y condiciones y el Aviso de privacidad
+            </Text>
+            {" "}de KaabMap.
+          </Text>
+        </View>
 
 
         {/* ERROR */}
